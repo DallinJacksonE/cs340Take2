@@ -1,0 +1,12 @@
+{
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@types/node": "^25.0.3"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.ts"
+  }
+}
