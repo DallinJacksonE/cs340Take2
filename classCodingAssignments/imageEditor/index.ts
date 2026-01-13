@@ -18,12 +18,18 @@ class ImageEditor {
       const inputFile: string = args[0];
       const outputFile: string = args[1];
       const filter: string = args[2];
-
-      switch (filter) {
-        case ("grayscale" || "greyscale"): {
+      const normalizedFilter = filter === "greyscale" ? "grayscale" : filter;
+      switch (normalizedFilter) {
+        case ("grayscale"): {
           if (args.length != 3) return this.usage();
         }
         case ("invert"): {
+          if (args.length != 3) return this.usage();
+        }
+        case ("emboss"): {
+          if (args.length != 3) return this.usage();
+        }
+        case ("emboss"): {
           if (args.length != 3) return this.usage();
         }
       }
