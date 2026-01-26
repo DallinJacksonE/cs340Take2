@@ -28,6 +28,7 @@ class ImageEditor {
           break;
         }
 
+
         case ("invert"): {
           if (args.length != 3) return this.usage();
           this.invert(image);
@@ -36,6 +37,7 @@ class ImageEditor {
 
         case ("emboss"): {
           if (args.length != 3) return this.usage();
+          console.log("Embossing Image")
           this.emboss(image);
           break;
         }
@@ -83,15 +85,15 @@ class ImageEditor {
         let i: number;
         for (i = x + 1; i <= maxX; i++) {
           let tempColor = image.get(i, y)!;
-          color.red = tempColor.red;
-          color.green = tempColor.green;
-          color.blue = tempColor.blue;
+          color.red += tempColor.red;
+          color.green += tempColor.green;
+          color.blue += tempColor.blue;
         }
 
         let delta: number = maxX - x + 1;
-        color.red /= delta;
-        color.green /= delta;
-        color.blue /= delta;
+        color.red = Math.floor(color.red / delta);
+        color.green = Math.floor(color.green / delta);
+        color.blue = Math.floor(color.blue / delta);
       }
     }
   }
@@ -104,8 +106,9 @@ class ImageEditor {
         let color: Color = image.get(x, y)!;
 
         color.red = 255 - color.red;
-        color.blue = 255 - color.blue;
         color.green = 255 - color.green;
+        color.blue = 255 - color.blue;
+
       }
     }
   }
@@ -117,51 +120,51 @@ class ImageEditor {
       for (y = 0; y < image.getHeight(); y++) {
         let color: Color = image.get(x, y)!;
 
-        let greyLevel = (color.red + color.blue + color.green) / 3;
+        let greyLevel = Math.floor((color.red + color.blue + color.green) / 3);
         greyLevel = Math.max(0, Math.min(greyLevel, 255));
 
         color.red = greyLevel;
-        color.blue = greyLevel;
         color.green = greyLevel;
+        color.blue = greyLevel;
+
       }
     }
   }
 
   private emboss(image: Image) {
-    let x: number;
-    let y: number;
+    for (let x = image.getWidth() - 1; x >= 0; x--) {
+      for (let y = image.getHeight() - 1; y >= 0; y--) {
+        const curColor = image.get(x, y);
+        if (!curColor) {
+          console.error("missing pixels");
+          process.exit(1);
+        }
+        let diff = 0;
 
-    for (x = 0; x < image.getWidth(); x++) {
-      for (y = 0; y < image.getHeight(); y++) {
-        let color: Color = image.get(x, y)!;
-
-        let diff: number = 0;
         if (x > 0 && y > 0) {
-          let upLeftColor = image.get(x - 1, y - 1)!;
-          if (Math.abs(color.red - upLeftColor.red) > Math.abs(diff)) {
-            diff = color.red - upLeftColor.red;
-          }
-          if (Math.abs(color.blue - upLeftColor.blue) > Math.abs(diff)) {
-            diff = color.blue - upLeftColor.blue;
-          }
-          if (Math.abs(color.green - upLeftColor.green) > Math.abs(diff)) {
-            diff = color.green - upLeftColor.green;
-          }
+          const upLeftColor = image.get(x - 1, y - 1)!;
+
+          const redDiff = curColor.red - upLeftColor.red;
+          const greenDiff = curColor.green - upLeftColor.green;
+          const blueDiff = curColor.blue - upLeftColor.blue;
+
+          if (Math.abs(redDiff) > Math.abs(diff)) diff = redDiff;
+          if (Math.abs(greenDiff) > Math.abs(diff)) diff = greenDiff;
+          if (Math.abs(blueDiff) > Math.abs(diff)) diff = blueDiff;
         }
 
-        let greyLevel: number = 128 - diff;
-        greyLevel = Math.max(0, Math.min(greyLevel, 255));
+        let grayLevel = 128 + diff;
+        if (grayLevel < 0) grayLevel = 0;
+        if (grayLevel > 255) grayLevel = 255;
 
-        color.red = greyLevel;
-        color.blue = greyLevel;
-        color.green = greyLevel;
+        curColor.red = grayLevel;
+        curColor.green = grayLevel;
+        curColor.blue = grayLevel;
       }
     }
-  }
-
-  private read(filePath: string): Image {
+  } private read(filePath: string): Image {
     const text = fs.readFileSync(filePath, "utf-8");
-    const tokens: string[] = text.split(/\s+/);
+    const tokens: string[] = text.split(/\s+/).filter(t => t.length > 0);
     if (!tokens) {
       this.usage();
       process.exit(1);
@@ -169,7 +172,7 @@ class ImageEditor {
     tokens.forEach(value => {
       if (!value) {
         console.error("damaged photo data");
-        process.exit(1);
+        //process.exit(1);
       }
     })
     let i = 0;
@@ -179,8 +182,7 @@ class ImageEditor {
 
     const width = parseInt(tokens[i++]!, 10);
     const height = parseInt(tokens[i++]!, 10);
-    const fill: Color = new Color(0, 0, 0);
-    const image = new Image(width, height, fill);
+    const image = new Image(width, height);
 
     // Skip max color value
     i++;
@@ -233,9 +235,14 @@ class Color {
 class Image {
   private pixels: Color[][];
 
-  constructor(width: number, height: number, fill: Color) {
-    this.pixels = Array.from({ length: width }, () =>
-      Array.from({ length: height }, () => fill));
+  constructor(width: number, height: number) {
+    this.pixels = new Array(width);
+    for (let x = 0; x < width; x++) {
+      this.pixels[x] = new Array(height);
+      for (let y = 0; y < height; y++) {
+        this.pixels[x]![y] = new Color(0, 0, 0);
+      }
+    }
   }
 
   getWidth(): number {
@@ -258,3 +265,6 @@ class Image {
     return this.pixels[x]![y];
   }
 }
+
+
+ImageEditor.main(process.argv.slice(2));
