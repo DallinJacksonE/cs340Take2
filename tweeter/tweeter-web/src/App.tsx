@@ -12,10 +12,10 @@ import Login from "./components/authentication/login/Login";
 import Register from "./components/authentication/register/Register";
 import MainLayout from "./components/mainLayout/MainLayout";
 import Toaster from "./components/toaster/Toaster";
-import FolloweesScroller from "./components/mainLayout/FolloweesScroller";
-import FollowersScroller from "./components/mainLayout/FollowersScroller";
-import FeedScroller from "./components/mainLayout/FeedScroller";
-import StoryScroller from "./components/mainLayout/StoryScroller";
+import FolloweesScroller from "./components/mainLayout/UserScrollers/FolloweesScroller";
+import FollowersScroller from "./components/mainLayout/UserScrollers/FollowersScroller";
+import FeedScroller from "./components/mainLayout/StatusScrollers/FeedScroller";
+import StoryScroller from "./components/mainLayout/StatusScrollers/StoryScroller";
 
 const App = () => {
   const { currentUser, authToken } = useContext(UserInfoContext);

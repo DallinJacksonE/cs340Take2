@@ -2,18 +2,28 @@ import { useContext } from "react";
 import {
   UserInfoContext,
   UserInfoActionsContext,
-} from "../userInfo/UserInfoContexts";
+} from "../../userInfo/UserInfoContexts";
 import { useState, useEffect } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { AuthToken, FakeData, User } from "tweeter-shared";
-import { ToastActionsContext } from "../toaster/ToastContexts";
+import { ToastActionsContext } from "../../toaster/ToastContexts";
 import { useParams } from "react-router-dom";
-import { ToastType } from "../toaster/Toast";
-import UserItem from "../userItem/UserItem";
+import { ToastType } from "../../toaster/Toast";
+import UserItem from "../../userItem/UserItem";
 
 export const PAGE_SIZE = 10;
 
-const FollowersScroller = () => {
+interface Props {
+  featurePath: string;
+  loadMoreFunction: (
+    authToken: AuthToken,
+    userAlias: string,
+    pageSize: number,
+    lastFollowee: User | null
+  ) => Promise<[User[], boolean]>;
+}
+
+const UserItemScroller = (props: Props) => {
   const { displayToast } = useContext(ToastActionsContext);
   const [items, setItems] = useState<User[]>([]);
   const [hasMoreItems, setHasMoreItems] = useState(true);
@@ -25,14 +35,6 @@ const FollowersScroller = () => {
   const { displayedUser, authToken } = useContext(UserInfoContext);
   const { setDisplayedUser } = useContext(UserInfoActionsContext);
   const { displayedUser: displayedUserAliasParam } = useParams();
-
-  const getUser = async (
-    authToken: AuthToken,
-    alias: string
-  ): Promise<User | null> => {
-    // TODO: Replace with the result of calling server
-    return FakeData.instance.findUserByAlias(alias);
-  };
 
   // Update the displayed user context variable whenever the displayedUser url parameter changes. This allows browser forward and back buttons to work correctly.
   useEffect(() => {
@@ -63,7 +65,7 @@ const FollowersScroller = () => {
 
   const loadMoreItems = async (lastItem: User | null) => {
     try {
-      const [newItems, hasMore] = await loadMoreFollowers(
+      const [newItems, hasMore] = await props.loadMoreFunction(
         authToken!,
         displayedUser!.alias,
         PAGE_SIZE,
@@ -76,42 +78,44 @@ const FollowersScroller = () => {
     } catch (error) {
       displayToast(
         ToastType.Error,
-        `Failed to load followers because of exception: ${error}`,
+        `Failed to load ${props.featurePath} because of exception: ${error}`,
         0
       );
     }
   };
 
-  const loadMoreFollowers = async (
+
+  const getUser = async (
     authToken: AuthToken,
-    userAlias: string,
-    pageSize: number,
-    lastFollower: User | null
-  ): Promise<[User[], boolean]> => {
+    alias: string
+  ): Promise<User | null> => {
     // TODO: Replace with the result of calling server
-    return FakeData.instance.getPageOfUsers(lastFollower, pageSize, userAlias);
+    return FakeData.instance.findUserByAlias(alias);
   };
 
   return (
-    <div className="container px-0 overflow-visible vh-100">
-      <InfiniteScroll
-        className="pr-0 mr-0"
-        dataLength={items.length}
-        next={() => loadMoreItems(lastItem)}
-        hasMore={hasMoreItems}
-        loader={<h4>Loading...</h4>}
-      >
-        {items.map((item, index) => (
-          <div
-            key={index}
-            className="row mb-3 mx-0 px-0 border rounded bg-white"
-          >
-            <UserItem user={item} featurePath="/followers" />
-          </div>
-        ))}
-      </InfiniteScroll>
-    </div>
-  );
-};
+    <>
+      <div className="container px-0 overflow-visible vh-100">
+        <InfiniteScroll
+          className="pr-0 mr-0"
+          dataLength={items.length}
+          next={() => loadMoreItems(lastItem)}
+          hasMore={hasMoreItems}
+          loader={<h4>Loading...</h4>}
+        >
+          {items.map((item, index) => (
+            <div
+              key={index}
+              className="row mb-3 mx-0 px-0 border rounded bg-white"
+            >
+              <UserItem user={item} featurePath={`/${props.featurePath}`} />
+            </div>
+          ))}
+        </InfiniteScroll>
+      </div>
 
-export default FollowersScroller;
+    </>
+  );
+}
+
+export default UserItemScroller;
