@@ -1,16 +1,14 @@
-import { useContext } from "react";
 import {
-  UserInfoContext,
-  UserInfoActionsContext,
-} from "../../userInfo/UserInfoContexts";
+  useUserInfo,
+  useUserInfoActions,
+} from "../../userInfo/UserInfoHooks";
 import { AuthToken, FakeData, Status, User } from "tweeter-shared";
 import { useState, useEffect } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { ToastActionsContext } from "../../toaster/ToastContexts";
+import { useMessageActions } from "../../toaster/MessageHooks";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ToastType } from "../../toaster/Toast";
 import Post from "../../statusItem/Post";
-
+import { useUserNavigationActions } from "../../userNavigation/UserNavigationHooks"
 export const PAGE_SIZE = 10;
 
 interface Props {
@@ -25,17 +23,17 @@ interface Props {
 
 const StatusItemScroller = (props: Props) => {
 
-  const { displayToast } = useContext(ToastActionsContext);
+  const { displayErrorMessage } = useMessageActions();
   const [items, setItems] = useState<Status[]>([]);
   const [hasMoreItems, setHasMoreItems] = useState(true);
   const [lastItem, setLastItem] = useState<Status | null>(null);
-  const navigate = useNavigate();
 
+  const { navigateToUser, getUser } = useUserNavigationActions();
   const addItems = (newItems: Status[]) =>
     setItems((previousItems) => [...previousItems, ...newItems]);
 
-  const { displayedUser, authToken } = useContext(UserInfoContext);
-  const { setDisplayedUser } = useContext(UserInfoActionsContext);
+  const { displayedUser, authToken } = useUserInfo();
+  const { setDisplayedUser } = useUserInfoActions();
   const { displayedUser: displayedUserAliasParam } = useParams();
 
   // Update the displayed user context variable whenever the displayedUser url parameter changes. This allows browser forward and back buttons to work correctly.
@@ -78,48 +76,10 @@ const StatusItemScroller = (props: Props) => {
       setLastItem(() => newItems[newItems.length - 1]);
       addItems(newItems);
     } catch (error) {
-      displayToast(
-        ToastType.Error,
+      displayErrorMessage(
         `Failed to load story items because of exception: ${error}`,
-        0
       );
     }
-  };
-
-  const navigateToUser = async (event: React.MouseEvent): Promise<void> => {
-    event.preventDefault();
-
-    try {
-      const alias = extractAlias(event.target.toString());
-
-      const toUser = await getUser(authToken!, alias);
-
-      if (toUser) {
-        if (!toUser.equals(displayedUser!)) {
-          setDisplayedUser(toUser);
-          navigate(`/story/${toUser.alias}`);
-        }
-      }
-    } catch (error) {
-      displayToast(
-        ToastType.Error,
-        `Failed to get user because of exception: ${error}`,
-        0
-      );
-    }
-  };
-
-  const extractAlias = (value: string): string => {
-    const index = value.indexOf("@");
-    return value.substring(index);
-  };
-
-  const getUser = async (
-    authToken: AuthToken,
-    alias: string
-  ): Promise<User | null> => {
-    // TODO: Replace with the result of calling server
-    return FakeData.instance.findUserByAlias(alias);
   };
 
   return (

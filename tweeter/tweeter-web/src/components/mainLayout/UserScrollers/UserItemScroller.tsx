@@ -1,16 +1,14 @@
-import { useContext } from "react";
 import {
-  UserInfoContext,
-  UserInfoActionsContext,
-} from "../../userInfo/UserInfoContexts";
+  useUserInfo,
+  useUserInfoActions,
+} from "../../userInfo/UserInfoHooks";
 import { useState, useEffect } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { AuthToken, FakeData, User } from "tweeter-shared";
-import { ToastActionsContext } from "../../toaster/ToastContexts";
+import { AuthToken, User } from "tweeter-shared";
+import { useMessageActions } from "../../toaster/MessageHooks";
 import { useParams } from "react-router-dom";
-import { ToastType } from "../../toaster/Toast";
 import UserItem from "../../userItem/UserItem";
-
+import { useUserNavigationActions } from "../../userNavigation/UserNavigationHooks"
 export const PAGE_SIZE = 10;
 
 interface Props {
@@ -24,7 +22,7 @@ interface Props {
 }
 
 const UserItemScroller = (props: Props) => {
-  const { displayToast } = useContext(ToastActionsContext);
+  const { displayErrorMessage } = useMessageActions();
   const [items, setItems] = useState<User[]>([]);
   const [hasMoreItems, setHasMoreItems] = useState(true);
   const [lastItem, setLastItem] = useState<User | null>(null);
@@ -32,10 +30,11 @@ const UserItemScroller = (props: Props) => {
   const addItems = (newItems: User[]) =>
     setItems((previousItems) => [...previousItems, ...newItems]);
 
-  const { displayedUser, authToken } = useContext(UserInfoContext);
-  const { setDisplayedUser } = useContext(UserInfoActionsContext);
+  const { displayedUser, authToken } = useUserInfo();
+  const { setDisplayedUser } = useUserInfoActions();
   const { displayedUser: displayedUserAliasParam } = useParams();
 
+  const { getUser } = useUserNavigationActions();
   // Update the displayed user context variable whenever the displayedUser url parameter changes. This allows browser forward and back buttons to work correctly.
   useEffect(() => {
     if (
@@ -76,21 +75,10 @@ const UserItemScroller = (props: Props) => {
       setLastItem(() => newItems[newItems.length - 1]);
       addItems(newItems);
     } catch (error) {
-      displayToast(
-        ToastType.Error,
+      displayErrorMessage(
         `Failed to load ${props.featurePath} because of exception: ${error}`,
-        0
       );
     }
-  };
-
-
-  const getUser = async (
-    authToken: AuthToken,
-    alias: string
-  ): Promise<User | null> => {
-    // TODO: Replace with the result of calling server
-    return FakeData.instance.findUserByAlias(alias);
   };
 
   return (
