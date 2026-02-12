@@ -9,6 +9,7 @@ import { useMessageActions } from "../../toaster/MessageHooks";
 import { useParams } from "react-router-dom";
 import UserItem from "../../userItem/UserItem";
 import { useUserNavigationActions } from "../../userNavigation/UserNavigationHooks"
+import { FolloweePresenter, FolloweeView } from "../../../presenter/FolloweePresenter";
 export const PAGE_SIZE = 10;
 
 interface Props {
@@ -35,6 +36,13 @@ const UserItemScroller = (props: Props) => {
   const { displayedUser: displayedUserAliasParam } = useParams();
 
   const { getUser } = useUserNavigationActions();
+
+  const listener: FolloweeView = {
+
+  }
+
+  const presenter = new FolloweePresenter(listener);
+
   // Update the displayed user context variable whenever the displayedUser url parameter changes. This allows browser forward and back buttons to work correctly.
   useEffect(() => {
     if (
