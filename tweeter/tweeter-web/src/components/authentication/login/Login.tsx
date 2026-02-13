@@ -59,7 +59,7 @@ const Login = (props: Props) => {
     password: string
   ): Promise<[User, AuthToken]> => {
     // TODO: Replace with the result of calling the server
-    const user = FakeData.instance.firstUser;
+    const user = .instance.firstUser;
 
     if (user === null) {
       throw new Error("Invalid alias or password");

@@ -1,47 +1,36 @@
-import {
-  useUserInfo,
-  useUserInfoActions,
-} from "../../userInfo/UserInfoHooks";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { AuthToken, User } from "tweeter-shared";
-import { useMessageActions } from "../../toaster/MessageHooks";
+import { User } from "tweeter-shared";
 import { useParams } from "react-router-dom";
 import UserItem from "../../userItem/UserItem";
-import { useUserNavigationActions } from "../../userNavigation/UserNavigationHooks"
-import { FolloweePresenter, FolloweeView } from "../../../presenter/FolloweePresenter";
-export const PAGE_SIZE = 10;
+import { useMessageActions } from "../../toaster/MessageHooks";
+import { useUserInfo, useUserInfoActions } from "../../userInfo/UserInfoHooks";
+import { useUserNavigationActions } from "../../userNavigation/UserNavigationHooks";
+import { ScrollableItemPresenter, ScrollableItemView } from "../../../presenter/ScrollableItemPresenter";
 
-interface Props {
-  featurePath: string;
-  loadMoreFunction: (
-    authToken: AuthToken,
-    userAlias: string,
-    pageSize: number,
-    lastFollowee: User | null
-  ) => Promise<[User[], boolean]>;
+interface props {
+  pageType: "followees" | "followers";
+  presenterFactory: (view: ScrollableItemView<User>) => ScrollableItemPresenter<User>;
 }
 
-const UserItemScroller = (props: Props) => {
+const UserItemScroller = (props: props) => {
   const { displayErrorMessage } = useMessageActions();
   const [items, setItems] = useState<User[]>([]);
-  const [hasMoreItems, setHasMoreItems] = useState(true);
-  const [lastItem, setLastItem] = useState<User | null>(null);
-
-  const addItems = (newItems: User[]) =>
-    setItems((previousItems) => [...previousItems, ...newItems]);
-
   const { displayedUser, authToken } = useUserInfo();
   const { setDisplayedUser } = useUserInfoActions();
   const { displayedUser: displayedUserAliasParam } = useParams();
-
   const { getUser } = useUserNavigationActions();
 
-  const listener: FolloweeView = {
-
+  const listener: ScrollableItemView<User> = {
+    addItems: (newItems: User[]) =>
+      setItems((previousItems) => [...previousItems, ...newItems]),
+    displayErrorMessage: displayErrorMessage
   }
 
-  const presenter = new FolloweePresenter(listener);
+  const presenterRef = useRef<ScrollableItemPresenter<User> | null>(null);
+  if (!presenterRef.current) {
+    presenterRef.current = props.presenterFactory(listener);
+  }
 
   // Update the displayed user context variable whenever the displayedUser url parameter changes. This allows browser forward and back buttons to work correctly.
   useEffect(() => {
@@ -61,57 +50,38 @@ const UserItemScroller = (props: Props) => {
   // Initialize the component whenever the displayed user changes
   useEffect(() => {
     reset();
-    loadMoreItems(null);
+    loadMoreItems();
   }, [displayedUser]);
 
   const reset = async () => {
     setItems(() => []);
-    setLastItem(() => null);
-    setHasMoreItems(() => true);
+    presenterRef.current!.reset();
   };
 
-  const loadMoreItems = async (lastItem: User | null) => {
-    try {
-      const [newItems, hasMore] = await props.loadMoreFunction(
-        authToken!,
-        displayedUser!.alias,
-        PAGE_SIZE,
-        lastItem
-      );
-
-      setHasMoreItems(() => hasMore);
-      setLastItem(() => newItems[newItems.length - 1]);
-      addItems(newItems);
-    } catch (error) {
-      displayErrorMessage(
-        `Failed to load ${props.featurePath} because of exception: ${error}`,
-      );
-    }
+  const loadMoreItems = async () => {
+    presenterRef.current!.loadMoreItems(authToken!, displayedUser!.alias);
   };
 
   return (
-    <>
-      <div className="container px-0 overflow-visible vh-100">
-        <InfiniteScroll
-          className="pr-0 mr-0"
-          dataLength={items.length}
-          next={() => loadMoreItems(lastItem)}
-          hasMore={hasMoreItems}
-          loader={<h4>Loading...</h4>}
-        >
-          {items.map((item, index) => (
-            <div
-              key={index}
-              className="row mb-3 mx-0 px-0 border rounded bg-white"
-            >
-              <UserItem user={item} featurePath={`/${props.featurePath}`} />
-            </div>
-          ))}
-        </InfiniteScroll>
-      </div>
-
-    </>
+    <div className="container px-0 overflow-visible vh-100">
+      <InfiniteScroll
+        className="pr-0 mr-0"
+        dataLength={items.length}
+        next={loadMoreItems}
+        hasMore={presenterRef.current!.hasMoreItems}
+        loader={<h4>Loading...</h4>}
+      >
+        {items.map((item, index) => (
+          <div
+            key={index}
+            className="row mb-3 mx-0 px-0 border rounded bg-white"
+          >
+            <UserItem user={item} featurePath={`/${props.pageType}`} />
+          </div>
+        ))}
+      </InfiniteScroll>
+    </div>
   );
-}
+};
 
 export default UserItemScroller;
