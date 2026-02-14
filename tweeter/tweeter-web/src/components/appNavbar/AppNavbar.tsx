@@ -7,7 +7,7 @@ import { Container, Nav, Navbar } from "react-bootstrap";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import Image from "react-bootstrap/Image";
 import { useMessageActions } from "../toaster/MessageHooks";
-import { AuthToken } from "tweeter-shared";
+import { LogoutPresenter } from "../../presenter/LogoutPresenter";
 
 const AppNavbar = () => {
   const location = useLocation();
@@ -16,11 +16,13 @@ const AppNavbar = () => {
   const navigate = useNavigate();
   const { displayInfoMessage, displayErrorMessage, deleteMessage } = useMessageActions();
 
+  const presenter = new LogoutPresenter();
+
   const logOut = async () => {
     const loggingOutToastId = displayInfoMessage("Logging Out...", 0);
 
     try {
-      await logout(authToken!);
+      await presenter.logout(authToken!);
 
       deleteMessage(loggingOutToastId);
       clearUserInfo();
@@ -32,10 +34,6 @@ const AppNavbar = () => {
     }
   };
 
-  const logout = async (authToken: AuthToken): Promise<void> => {
-    // Pause so we can see the logging out message. Delete when the call to the server is implemented.
-    await new Promise((res) => setTimeout(res, 1000));
-  };
 
   return (
     <Navbar

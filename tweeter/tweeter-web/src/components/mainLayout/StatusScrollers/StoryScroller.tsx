@@ -1,23 +1,13 @@
 
-import { AuthToken, FakeData, Status, User } from "tweeter-shared";
-
+import { Status } from "tweeter-shared";
 import StatusItemScroller from "./StatusItemScroller";
+import { StoryPresenter } from "../../../presenter/StatusPresenters/StoryPresenter";
+import { ScrollableItemView } from "../../../presenter/ScrollableItemPresenter";
 
 const StoryScroller = () => {
-
-  const loadMoreStoryItems = async (
-    authToken: AuthToken,
-    userAlias: string,
-    pageSize: number,
-    lastItem: Status | null
-  ): Promise<[Status[], boolean]> => {
-    // TODO: Replace with the result of calling server
-    return FakeData.instance.getPageOfStatuses(lastItem, pageSize);
-  };
-
   return (
-    <StatusItemScroller featurePath={"feed"} loadMoreFunction={loadMoreStoryItems} />
-  );
+    <StatusItemScroller pageType="story" presenterFactory={(view: ScrollableItemView<Status>) => new StoryPresenter(view)} />
+  )
 };
 
 export default StoryScroller;

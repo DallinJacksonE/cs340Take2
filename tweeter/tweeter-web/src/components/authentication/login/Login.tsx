@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthenticationFormLayout from "../AuthenticationFormLayout";
 import AuthenticationFields from "../AuthenticationFields";
-import { AuthToken, FakeData, User } from "tweeter-shared";
+import { AuthToken, User } from "tweeter-shared";
 import { useMessageActions } from "../../toaster/MessageHooks";
 import { LoginPresenter, LoginView } from "../../../presenter/LoginPresenter";
 

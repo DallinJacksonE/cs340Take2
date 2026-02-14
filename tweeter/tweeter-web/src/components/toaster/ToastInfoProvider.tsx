@@ -11,7 +11,7 @@ interface ToastInfoProviderProps {
   children: React.ReactNode;
 }
 
-export const ToastInfoProvider: React.FC<ToastInfoProviderProps> = ({
+const ToastInfoProvider: React.FC<ToastInfoProviderProps> = ({
   children,
 }) => {
   const [toastList, setToastList] = useState<Toast[]>([]);
@@ -41,3 +41,5 @@ export const ToastInfoProvider: React.FC<ToastInfoProviderProps> = ({
     </ToastListContext.Provider>
   );
 };
+
+export default ToastInfoProvider;
