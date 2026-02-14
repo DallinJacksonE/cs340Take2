@@ -11,7 +11,7 @@ const Post = (props: Props) => {
   const { navigateToUser } = useUserNavigationActions();
   return (
     <>
-      {props.status.segments.map((segment, index) =>
+      {props.status.segments.map((segment: any, index: number) =>
         segment.type === Type.alias ? (
           <Link
             key={index}

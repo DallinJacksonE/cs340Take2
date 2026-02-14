@@ -1,20 +1,13 @@
-import { AuthToken, FakeData, User } from "tweeter-shared";
-import UserItemScroller from "./UserItemScroller"
+import UserItemScroller from "./UserItemScroller";
+import { FolloweePresenter } from "../../../presenter/UserPresenters/FolloweePresenter";
+import { ScrollableItemView } from "../../../presenter/ScrollableItemPresenter";
+import { User } from "tweeter-shared";
 
 const FolloweesScroller = () => {
 
-  const loadMoreFollowees = async (
-    authToken: AuthToken,
-    userAlias: string,
-    pageSize: number,
-    lastFollowee: User | null
-  ): Promise<[User[], boolean]> => {
-    // TODO: Replace with the result of calling server
-    return FakeData.instance.getPageOfUsers(lastFollowee, pageSize, userAlias);
-  };
   return (
-    <UserItemScroller featurePath={"followers"} loadMoreFunction={loadMoreFollowees} />
-  );
+    <UserItemScroller pageType="followees" presenterFactory={(view: ScrollableItemView<User>) => new FolloweePresenter(view)} />
+  )
 };
 
 export default FolloweesScroller;
