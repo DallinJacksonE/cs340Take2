@@ -1,14 +1,14 @@
 import { AuthToken, Status, User } from "tweeter-shared";
-import { StatusService } from "../../model.service/StatusService";
+import { StatusService } from "../model.service/StatusService";
 
 export interface PostStatusView {
-  displayInfoMessage: (message: string, duration: number) => string,
-  displayErrorMessage: (message: string) => void,
-  setIsLoading: (value: boolean) => void,
-  deleteMessage: (id: string) => void,
-  currentUser: User | null,
-  authToken: AuthToken | null,
-  setPost: (value: string) => void
+  displayInfoMessage: (message: string, duration: number) => string;
+  displayErrorMessage: (message: string) => void;
+  setIsLoading: (value: boolean) => void;
+  deleteMessage: (id: string) => void;
+  currentUser: User | null;
+  authToken: AuthToken | null;
+  setPost: (value: string) => void;
 }
 
 export class PostStatusPresenter {
@@ -28,7 +28,7 @@ export class PostStatusPresenter {
       this._view.setIsLoading(true);
       postingStatusToastId = this._view.displayInfoMessage(
         "Posting status...",
-        0
+        0,
       );
 
       const status = new Status(post, this._view.currentUser!, Date.now());
@@ -45,15 +45,13 @@ export class PostStatusPresenter {
       this._view.deleteMessage(postingStatusToastId);
       this._view.setIsLoading(false);
     }
-  };
+  }
 
   public clearPost() {
     this._view.setPost("");
-  };
+  }
 
   public checkButtonStatus(post: string): boolean {
     return !post.trim() || !this._view.authToken || !this._view.currentUser;
-  };
-
-
+  }
 }

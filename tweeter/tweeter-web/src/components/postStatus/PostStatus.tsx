@@ -2,10 +2,14 @@ import "./PostStatus.css";
 import { useRef, useState } from "react";
 import { useMessageActions } from "../toaster/MessageHooks";
 import { useUserInfo } from "../userInfo/UserInfoHooks";
-import { PostStatusPresenter, PostStatusView } from "../../presenter/StatusPresenters/PostStatusPresenter";
+import {
+  PostStatusPresenter,
+  PostStatusView,
+} from "../../presenter/PostStatusPresenter";
 
 const PostStatus = () => {
-  const { displayErrorMessage, displayInfoMessage, deleteMessage } = useMessageActions();
+  const { displayErrorMessage, displayInfoMessage, deleteMessage } =
+    useMessageActions();
 
   const { currentUser, authToken } = useUserInfo();
   const [post, setPost] = useState("");
@@ -19,7 +23,7 @@ const PostStatus = () => {
     currentUser: currentUser,
     authToken: authToken,
     setPost: setPost,
-  }
+  };
 
   const presenter = useRef<PostStatusPresenter | null>(null);
   if (!presenter.current) {
@@ -30,7 +34,7 @@ const PostStatus = () => {
   const clearPost = (event: React.MouseEvent) => {
     event.preventDefault();
     presenter.current!.clearPost();
-  }
+  };
 
   return (
     <form>

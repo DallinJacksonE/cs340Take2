@@ -1,13 +1,12 @@
 import { Link } from "react-router-dom";
 import { User } from "tweeter-shared";
-import { useUserNavigationActions } from "../userNavigation/UserNavigationHooks"
+import { useUserNavigationActions } from "../userNavigation/UserNavigationHooks";
 interface Props {
   user: User;
   featurePath: string;
 }
 
 const UserItem = (props: Props) => {
-
   const { navigateToUser } = useUserNavigationActions();
   return (
     <div className="col bg-light mx-0 px-0">
@@ -28,7 +27,7 @@ const UserItem = (props: Props) => {
               </b>{" "}
               -{" "}
               <Link
-                to={`${props.featurePath}/${props.user.alias}`}
+                to={`/${props.featurePath}/${props.user.alias}`}
                 onClick={navigateToUser}
               >
                 {props.user.alias}

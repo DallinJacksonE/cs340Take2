@@ -11,10 +11,10 @@ import Login from "./components/authentication/login/Login";
 import Register from "./components/authentication/register/Register";
 import MainLayout from "./components/mainLayout/MainLayout";
 import Toaster from "./components/toaster/Toaster";
-import FolloweesScroller from "./components/mainLayout/UserScrollers/FolloweesScroller";
-import FollowersScroller from "./components/mainLayout/UserScrollers/FollowersScroller";
-import FeedScroller from "./components/mainLayout/StatusScrollers/FeedScroller";
-import StoryScroller from "./components/mainLayout/StatusScrollers/StoryScroller";
+import FolloweesScroller from "./components/mainLayout/Scrollers/UserScrollers/FolloweesScroller";
+import FollowersScroller from "./components/mainLayout/Scrollers/UserScrollers/FollowersScroller";
+import FeedScroller from "./components/mainLayout/Scrollers/StatusScrollers/FeedScroller";
+import StoryScroller from "./components/mainLayout/Scrollers/StatusScrollers/StoryScroller";
 
 const App = () => {
   const { currentUser, authToken } = useUserInfo();
@@ -43,13 +43,25 @@ const AuthenticatedRoutes = () => {
   return (
     <Routes>
       <Route element={<MainLayout />}>
-        <Route index element={<Navigate to={`/feed/${displayedUser!.alias}`} />} />
+        <Route
+          index
+          element={<Navigate to={`/feed/${displayedUser!.alias}`} />}
+        />
         <Route path="feed/:displayedUser" element={<FeedScroller />} />
         <Route path="story/:displayedUser" element={<StoryScroller />} />
-        <Route path="followees/:displayedUser" element={<FolloweesScroller />} />
-        <Route path="followers/:displayedUser" element={<FollowersScroller />} />
+        <Route
+          path="followees/:displayedUser"
+          element={<FolloweesScroller />}
+        />
+        <Route
+          path="followers/:displayedUser"
+          element={<FollowersScroller />}
+        />
         <Route path="logout" element={<Navigate to="/login" />} />
-        <Route path="*" element={<Navigate to={`/feed/${displayedUser!.alias}`} />} />
+        <Route
+          path="*"
+          element={<Navigate to={`/feed/${displayedUser!.alias}`} />}
+        />
       </Route>
     </Routes>
   );

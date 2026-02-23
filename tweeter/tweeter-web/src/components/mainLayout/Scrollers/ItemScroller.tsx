@@ -1,43 +1,47 @@
 import { useState, useEffect, useRef } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { User } from "tweeter-shared";
 import { useParams } from "react-router-dom";
-import UserItem from "../../userItem/UserItem";
 import { useMessageActions } from "../../toaster/MessageHooks";
 import { useUserInfo, useUserInfoActions } from "../../userInfo/UserInfoHooks";
 import { useUserNavigationActions } from "../../userNavigation/UserNavigationHooks";
-import { ScrollableItemPresenter, ScrollableItemView } from "../../../presenter/ScrollableItemPresenter";
+import { PagedPresenterView } from "../../../presenter/PagedPresenters/PagedPresenter";
+import { PagedPresenter } from "../../../presenter/PagedPresenters/PagedPresenter";
 
-interface props {
-  pageType: "followees" | "followers";
-  presenterFactory: (view: ScrollableItemView<User>) => ScrollableItemPresenter<User>;
+interface Props<T, P extends PagedPresenter<T, any>> {
+  presenterFactory: (view: PagedPresenterView<T>) => P;
+  renderItem: (item: T) => JSX.Element;
 }
 
-const UserItemScroller = (props: props) => {
+const ItemScroller = <T, P extends PagedPresenter<T, any>>(
+  props: Props<T, P>,
+) => {
   const { displayErrorMessage } = useMessageActions();
-  const [items, setItems] = useState<User[]>([]);
+  const [items, setItems] = useState<T[]>([]);
+  const { getUser } = useUserNavigationActions();
   const { displayedUser, authToken } = useUserInfo();
   const { setDisplayedUser } = useUserInfoActions();
   const { displayedUser: displayedUserAliasParam } = useParams();
-  const { getUser } = useUserNavigationActions();
 
-  const listener: ScrollableItemView<User> = {
-    addItems: (newItems: User[]) =>
+  // Define the listener for the presenter
+  const listener: PagedPresenterView<T> = {
+    addItems: (newItems: T[]) =>
       setItems((previousItems) => [...previousItems, ...newItems]),
-    displayErrorMessage: displayErrorMessage
-  }
+    displayErrorMessage: displayErrorMessage,
+  };
 
-  const presenterRef = useRef<ScrollableItemPresenter<User> | null>(null);
+  // Initialize the presenter using a ref to persist it across renders
+  const presenterRef = useRef<P | null>(null);
   if (!presenterRef.current) {
     presenterRef.current = props.presenterFactory(listener);
   }
 
-  // Update the displayed user context variable whenever the displayedUser url parameter changes. This allows browser forward and back buttons to work correctly.
+  // Update the displayed user context variable whenever the displayedUser url parameter changes.
+  // This allows browser forward and back buttons to work correctly.
   useEffect(() => {
     if (
       authToken &&
       displayedUserAliasParam &&
-      displayedUserAliasParam != displayedUser!.alias
+      displayedUserAliasParam !== displayedUser!.alias
     ) {
       getUser(authToken!, displayedUserAliasParam!).then((toUser) => {
         if (toUser) {
@@ -59,7 +63,9 @@ const UserItemScroller = (props: props) => {
   };
 
   const loadMoreItems = async () => {
-    presenterRef.current!.loadMoreItems(authToken!, displayedUser!.alias);
+    if (authToken && displayedUser) {
+      presenterRef.current!.loadMoreItems(authToken, displayedUser);
+    }
   };
 
   return (
@@ -76,7 +82,7 @@ const UserItemScroller = (props: props) => {
             key={index}
             className="row mb-3 mx-0 px-0 border rounded bg-white"
           >
-            <UserItem user={item} featurePath={`/${props.pageType}`} />
+            {props.renderItem(item)}
           </div>
         ))}
       </InfiniteScroll>
@@ -84,4 +90,4 @@ const UserItemScroller = (props: props) => {
   );
 };
 
-export default UserItemScroller;
+export default ItemScroller;

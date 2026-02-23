@@ -1,14 +1,13 @@
 import Post from "./Post";
 import { Link } from "react-router-dom";
 import { Status } from "tweeter-shared";
-import { useUserNavigationActions } from "../userNavigation/UserNavigationHooks"
+import { useUserNavigationActions } from "../userNavigation/UserNavigationHooks";
 
 interface Props {
   item: Status;
   featurePath: String;
 }
 const StatusItem = (props: Props) => {
-
   const { navigateToUser } = useUserNavigationActions();
 
   return (
@@ -31,7 +30,7 @@ const StatusItem = (props: Props) => {
                 </b>{" "}
                 -{" "}
                 <Link
-                  to={`/feed/${props.item.user.alias}`}
+                  to={`/${props.featurePath}/${props.item.user.alias}`}
                   onClick={navigateToUser}
                 >
                   {props.item.user.alias}
@@ -46,6 +45,6 @@ const StatusItem = (props: Props) => {
       </div>
     </>
   );
-}
+};
 
 export default StatusItem;
