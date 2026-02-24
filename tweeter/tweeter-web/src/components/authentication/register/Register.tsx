@@ -8,7 +8,7 @@ import { useMessageActions } from "../../toaster/MessageHooks";
 import {
   RegisterPresenter,
   RegisterView,
-} from "../../../presenter/RegisterPresenter";
+} from "../../../presenter/AuthenticationPresenters/RegisterPresenter";
 import { AuthToken, User } from "tweeter-shared";
 
 const Register = () => {
@@ -19,7 +19,7 @@ const Register = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [image, setImage] = useState<File | null>(null);
   const [imageStringBase64, setImageStringBase64] = useState<string | null>(
-    null
+    null,
   );
   const [isLoading, setIsLoading] = useState(false);
 
@@ -36,11 +36,10 @@ const Register = () => {
         currentUser: User,
         displayedUser: User | null,
         authToken: AuthToken,
-        rememberMe: boolean
-      ) =>
-        updateUserInfo(currentUser, displayedUser, authToken, rememberMe),
+        rememberMe: boolean,
+      ) => updateUserInfo(currentUser, displayedUser, authToken, rememberMe),
     }),
-    [navigate, updateUserInfo, displayErrorMessage]
+    [navigate, updateUserInfo, displayErrorMessage],
   );
 
   const presenter = useMemo(() => new RegisterPresenter(view), [view]);
@@ -57,10 +56,6 @@ const Register = () => {
     }
   };
 
-  const checkSubmitButtonStatus = (): boolean => {
-    return !firstName || !lastName || !alias || !password || !image;
-  };
-
   const doRegister = async () => {
     if (imageStringBase64) {
       await presenter.doRegister(
@@ -69,7 +64,7 @@ const Register = () => {
         alias,
         password,
         imageStringBase64,
-        rememberMe
+        rememberMe,
       );
     }
   };
@@ -148,7 +143,15 @@ const Register = () => {
       inputFieldFactory={inputFieldFactory}
       switchAuthenticationMethodFactory={switchAuthenticationMethodFactory}
       setRememberMe={setRememberMe}
-      submitButtonDisabled={checkSubmitButtonStatus}
+      submitButtonDisabled={() =>
+        presenter.checkSubmitButtonStatus(
+          firstName,
+          lastName,
+          alias,
+          password,
+          image,
+        )
+      }
       isLoading={isLoading}
       submit={doRegister}
     />

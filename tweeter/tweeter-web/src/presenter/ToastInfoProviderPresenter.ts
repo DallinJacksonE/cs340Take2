@@ -1,13 +1,14 @@
-import { Toast, ToastType } from '../components/toaster/Toast';
+import { Toast, ToastType } from "../components/toaster/Toast";
+import { Presenter, View } from "./Presenter";
 
-export interface ToastInfoProviderView {
+export interface ToastInfoProviderView extends View {
   setToastList: (value: Toast[] | ((previousList: Toast[]) => Toast[])) => void;
   makeToast: (
     toastType: ToastType,
     message: string,
     duration: number,
     title?: string,
-    bootstrapClasses?: string
+    bootstrapClasses?: string,
   ) => Toast;
 }
 
@@ -18,21 +19,19 @@ export interface ToastActions {
     message: string,
     duration: number,
     title?: string,
-    bootstrapClasses?: string
+    bootstrapClasses?: string,
   ) => string;
   deleteToast: (id: string) => void;
   deleteAllToasts: () => void;
 }
 
-export class ToastInfoProviderPresenter {
-  private _view: ToastInfoProviderView;
-
+export class ToastInfoProviderPresenter extends Presenter<ToastInfoProviderView> {
   constructor(view: ToastInfoProviderView) {
-    this._view = view;
+    super(view);
   }
 
   public displayExistingToast(toast: Toast): void {
-    this._view.setToastList((previousList: Toast[]) => [...previousList, toast]);
+    this.view.setToastList((previousList: Toast[]) => [...previousList, toast]);
   }
 
   private _displayToast(
@@ -40,9 +39,15 @@ export class ToastInfoProviderPresenter {
     message: string,
     duration: number,
     title?: string,
-    bootstrapClasses?: string
+    bootstrapClasses?: string,
   ): string {
-    const toast = this._view.makeToast(toastType, message, duration, title, bootstrapClasses);
+    const toast = this.view.makeToast(
+      toastType,
+      message,
+      duration,
+      title,
+      bootstrapClasses,
+    );
     this.displayExistingToast(toast);
     return toast.id;
   }
@@ -53,16 +58,19 @@ export class ToastInfoProviderPresenter {
   }
 
   private _deleteAllToasts(): void {
-    this._view.setToastList([]);
+    this.view.setToastList([]);
   }
 
   public getToastActions(
-    useCallback: <T extends (...args: any[]) => any>(callback: T, dependencies: any[]) => T,
-    useMemo: <T>(factory: () => T, dependencies: any[]) => T
+    useCallback: <T extends (...args: any[]) => any>(
+      callback: T,
+      dependencies: any[],
+    ) => T,
+    useMemo: <T>(factory: () => T, dependencies: any[]) => T,
   ): ToastActions {
     const displayExistingToast = useCallback(
       (toast: Toast) => this.displayExistingToast(toast),
-      []
+      [],
     );
 
     const displayToast = useCallback(
@@ -71,20 +79,27 @@ export class ToastInfoProviderPresenter {
         message: string,
         duration: number,
         title?: string,
-        bootstrapClasses?: string
-      ) => this._displayToast(toastType, message, duration, title, bootstrapClasses),
-      []
+        bootstrapClasses?: string,
+      ) =>
+        this._displayToast(
+          toastType,
+          message,
+          duration,
+          title,
+          bootstrapClasses,
+        ),
+      [],
     );
 
     const deleteToast = useCallback(
-      (id: string) => this._view.setToastList((currentList: Toast[]) => this._deleteToast(currentList, id)),
-      []
+      (id: string) =>
+        this.view.setToastList((currentList: Toast[]) =>
+          this._deleteToast(currentList, id),
+        ),
+      [],
     );
 
-    const deleteAllToasts = useCallback(
-      () => this._deleteAllToasts(),
-      []
-    );
+    const deleteAllToasts = useCallback(() => this._deleteAllToasts(), []);
 
     return useMemo(
       () => ({
@@ -93,7 +108,7 @@ export class ToastInfoProviderPresenter {
         deleteToast,
         deleteAllToasts,
       }),
-      [displayExistingToast, displayToast, deleteToast, deleteAllToasts]
+      [displayExistingToast, displayToast, deleteToast, deleteAllToasts],
     );
   }
 }

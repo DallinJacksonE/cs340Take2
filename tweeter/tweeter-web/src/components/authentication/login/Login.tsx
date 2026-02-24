@@ -7,7 +7,10 @@ import AuthenticationFormLayout from "../AuthenticationFormLayout";
 import AuthenticationFields from "../AuthenticationFields";
 import { AuthToken, User } from "tweeter-shared";
 import { useMessageActions } from "../../toaster/MessageHooks";
-import { LoginPresenter, LoginView } from "../../../presenter/LoginPresenter";
+import {
+  LoginPresenter,
+  LoginView,
+} from "../../../presenter/AuthenticationPresenters/LoginPresenter";
 
 interface Props {
   originalUrl?: string;
@@ -23,25 +26,32 @@ const Login = (props: Props) => {
   const { updateUserInfo } = useUserInfoActions();
   const { displayErrorMessage } = useMessageActions();
 
-  const view: LoginView = useMemo(() => ({
-    setIsLoading: (isLoading: boolean) => setIsLoading(isLoading),
-    navigate: (url: string) => navigate(url),
-    displayErrorMessage: (message: string) => displayErrorMessage(message),
-    updateUserInfo: (currentUser: User, displayedUser: User | null, authToken: AuthToken, rememberMe: boolean) => updateUserInfo(currentUser, displayedUser, authToken, rememberMe),
-  }), [navigate, updateUserInfo, displayErrorMessage]);
+  const view: LoginView = useMemo(
+    () => ({
+      setIsLoading: (isLoading: boolean) => setIsLoading(isLoading),
+      navigate: (url: string) => navigate(url),
+      displayErrorMessage: (message: string) => displayErrorMessage(message),
+      updateUserInfo: (
+        currentUser: User,
+        displayedUser: User | null,
+        authToken: AuthToken,
+        rememberMe: boolean,
+      ) => updateUserInfo(currentUser, displayedUser, authToken, rememberMe),
+    }),
+    [navigate, updateUserInfo, displayErrorMessage],
+  );
 
   const presenter = useMemo(() => new LoginPresenter(view), [view]);
-
-  const checkSubmitButtonStatus = (): boolean => {
-    return !alias || !password;
-  };
 
   const doLogin = async () => {
     await presenter.doLogin(alias, password, rememberMe, props.originalUrl);
   };
 
   const loginOnEnter = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (event.key == "Enter" && !checkSubmitButtonStatus()) {
+    if (
+      event.key == "Enter" &&
+      !presenter.checkSubmitButtonStatus(alias, password)
+    ) {
       doLogin();
     }
   };
@@ -49,7 +59,11 @@ const Login = (props: Props) => {
   const inputFieldFactory = () => {
     return (
       <>
-        <AuthenticationFields onClick={loginOnEnter} setAlias={setAlias} setPassword={setPassword} />
+        <AuthenticationFields
+          onClick={loginOnEnter}
+          setAlias={setAlias}
+          setPassword={setPassword}
+        />
       </>
     );
   };
@@ -70,7 +84,9 @@ const Login = (props: Props) => {
       inputFieldFactory={inputFieldFactory}
       switchAuthenticationMethodFactory={switchAuthenticationMethodFactory}
       setRememberMe={setRememberMe}
-      submitButtonDisabled={checkSubmitButtonStatus}
+      submitButtonDisabled={() =>
+        presenter.checkSubmitButtonStatus(alias, password)
+      }
       isLoading={isLoading}
       submit={doLogin}
     />

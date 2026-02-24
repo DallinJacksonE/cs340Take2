@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { useParams } from "react-router-dom";
-import { useMessageActions } from "../../toaster/MessageHooks";
-import { useUserInfo, useUserInfoActions } from "../../userInfo/UserInfoHooks";
-import { useUserNavigationActions } from "../../userNavigation/UserNavigationHooks";
-import { PagedPresenterView } from "../../../presenter/PagedPresenters/PagedPresenter";
-import { PagedPresenter } from "../../../presenter/PagedPresenters/PagedPresenter";
+import { useMessageActions } from "../toaster/MessageHooks";
+import { useUserInfo, useUserInfoActions } from "../userInfo/UserInfoHooks";
+import { useUserNavigationActions } from "../userNavigation/UserNavigationHooks";
+import { PagedPresenterView } from "../../presenter/PagedPresenters/PagedPresenter";
+import { PagedPresenter } from "../../presenter/PagedPresenters/PagedPresenter";
 
 interface Props<T, P extends PagedPresenter<T, any>> {
   presenterFactory: (view: PagedPresenterView<T>) => P;
@@ -22,21 +22,17 @@ const ItemScroller = <T, P extends PagedPresenter<T, any>>(
   const { setDisplayedUser } = useUserInfoActions();
   const { displayedUser: displayedUserAliasParam } = useParams();
 
-  // Define the listener for the presenter
   const listener: PagedPresenterView<T> = {
     addItems: (newItems: T[]) =>
       setItems((previousItems) => [...previousItems, ...newItems]),
     displayErrorMessage: displayErrorMessage,
   };
 
-  // Initialize the presenter using a ref to persist it across renders
   const presenterRef = useRef<P | null>(null);
   if (!presenterRef.current) {
     presenterRef.current = props.presenterFactory(listener);
   }
 
-  // Update the displayed user context variable whenever the displayedUser url parameter changes.
-  // This allows browser forward and back buttons to work correctly.
   useEffect(() => {
     if (
       authToken &&
@@ -51,7 +47,6 @@ const ItemScroller = <T, P extends PagedPresenter<T, any>>(
     }
   }, [displayedUserAliasParam]);
 
-  // Initialize the component whenever the displayed user changes
   useEffect(() => {
     reset();
     loadMoreItems();

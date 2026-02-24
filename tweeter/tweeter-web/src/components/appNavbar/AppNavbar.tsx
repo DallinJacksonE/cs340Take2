@@ -1,39 +1,32 @@
 import "./AppNavbar.css";
-import {
-  useUserInfo,
-  useUserInfoActions,
-} from "../userInfo/UserInfoHooks";
+import { useUserInfo, useUserInfoActions } from "../userInfo/UserInfoHooks";
 import { Container, Nav, Navbar } from "react-bootstrap";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import Image from "react-bootstrap/Image";
 import { useMessageActions } from "../toaster/MessageHooks";
-import { LogoutPresenter } from "../../presenter/LogoutPresenter";
+import { LogoutPresenter, LogoutView } from "../../presenter/LogoutPresenter";
 
 const AppNavbar = () => {
   const location = useLocation();
   const { authToken, displayedUser } = useUserInfo();
   const { clearUserInfo } = useUserInfoActions();
   const navigate = useNavigate();
-  const { displayInfoMessage, displayErrorMessage, deleteMessage } = useMessageActions();
+  const { displayInfoMessage, displayErrorMessage, deleteMessage } =
+    useMessageActions();
 
-  const presenter = new LogoutPresenter();
-
-  const logOut = async () => {
-    const loggingOutToastId = displayInfoMessage("Logging Out...", 0);
-
-    try {
-      await presenter.logout(authToken!);
-
-      deleteMessage(loggingOutToastId);
-      clearUserInfo();
-      navigate("/login");
-    } catch (error) {
-      displayErrorMessage(
-        `Failed to log user out because of exception: ${error}`,
-      );
-    }
+  const logoutView: LogoutView = {
+    displayInfoMessage,
+    displayErrorMessage,
+    deleteMessage,
+    clearUserInfo,
+    navigate,
   };
 
+  const presenter = new LogoutPresenter(logoutView);
+
+  const logOut = async () => {
+    await presenter.logout(authToken!);
+  };
 
   return (
     <Navbar

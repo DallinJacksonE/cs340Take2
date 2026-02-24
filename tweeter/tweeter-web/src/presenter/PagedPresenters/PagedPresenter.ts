@@ -1,11 +1,12 @@
 import { AuthToken, User } from "tweeter-shared";
 import { Presenter, View } from "../Presenter";
+import { Service } from "../../model.service/Service";
 
 export interface PagedPresenterView<ITEM> extends View {
   addItems: (items: ITEM[]) => void;
 }
 
-export abstract class PagedPresenter<T, U> extends Presenter<
+export abstract class PagedPresenter<T, U extends Service> extends Presenter<
   PagedPresenterView<T>
 > {
   private _hasMoreItems: boolean = true;

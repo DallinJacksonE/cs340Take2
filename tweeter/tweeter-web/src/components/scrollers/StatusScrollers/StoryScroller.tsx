@@ -1,8 +1,8 @@
 import { Status } from "tweeter-shared";
-import { PagedPresenterView } from "../../../../presenter/PagedPresenters/PagedPresenter";
-import { StoryPresenter } from "../../../../presenter/PagedPresenters/StatusPresenters/StoryPresenter";
+import { PagedPresenterView } from "../../../presenter/PagedPresenters/PagedPresenter";
+import { StoryPresenter } from "../../../presenter/PagedPresenters/StatusPresenters/StoryPresenter";
 import ItemScroller from "../ItemScroller";
-import StatusItem from "../../../statusItem/StatusItem";
+import StatusItem from "../../statusItem/StatusItem";
 
 const StoryScroller = () => {
   return (

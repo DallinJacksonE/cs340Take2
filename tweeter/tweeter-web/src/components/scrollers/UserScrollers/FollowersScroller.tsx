@@ -1,7 +1,7 @@
-import { FollowerPresenter } from "../../../../presenter/PagedPresenters/UserPresenters/FollowersPresenter";
+import { FollowerPresenter } from "../../../presenter/PagedPresenters/UserPresenters/FollowersPresenter";
 import { User } from "tweeter-shared";
-import UserItem from "../../../userItem/UserItem";
-import { PagedPresenterView } from "../../../../presenter/PagedPresenters/PagedPresenter";
+import UserItem from "../../userItem/UserItem";
+import { PagedPresenterView } from "../../../presenter/PagedPresenters/PagedPresenter";
 import ItemScroller from "../ItemScroller";
 
 const FollowersScroller = () => {
