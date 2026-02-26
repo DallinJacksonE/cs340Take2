@@ -16,32 +16,33 @@ export class PostStatusPresenter extends Presenter<PostStatusView> {
     super(view);
   }
 
-  public async submitPost(event: React.MouseEvent, post: string) {
-    event.preventDefault();
+  public get service() {
+    return this._service;
+  }
 
+  public async submitPost(post: string) {
     var postingStatusToastId = "";
+    await this.doFailureReporting(
+      async () => {
+        this.view.setIsLoading(true);
+        postingStatusToastId = this.view.displayInfoMessage(
+          "Posting status...",
+          0,
+        );
 
-    try {
-      this.view.setIsLoading(true);
-      postingStatusToastId = this.view.displayInfoMessage(
-        "Posting status...",
-        0,
-      );
+        const status = new Status(post, this.view.currentUser!, Date.now());
 
-      const status = new Status(post, this.view.currentUser!, Date.now());
+        await this._service.postStatus(this.view.authToken!, status);
 
-      await this._service.postStatus(this.view.authToken!, status);
-
-      this.view.setPost("");
-      this.view.displayInfoMessage("Status posted!", 2000);
-    } catch (error) {
-      this.view.displayErrorMessage(
-        `Failed to post the status because of exception: ${error}`,
-      );
-    } finally {
-      this.view.deleteMessage(postingStatusToastId);
-      this.view.setIsLoading(false);
-    }
+        this.view.setPost("");
+        this.view.displayInfoMessage("Status posted!", 2000);
+      },
+      "post status",
+      () => {
+        this.view.deleteMessage(postingStatusToastId);
+        this.view.setIsLoading(false);
+      },
+    );
   }
 
   public clearPost() {

@@ -1,7 +1,7 @@
 import "./Login.css";
 import "bootstrap/dist/css/bootstrap.css";
 import { useUserInfoActions } from "../../userInfo/UserInfoHooks";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthenticationFormLayout from "../AuthenticationFormLayout";
 import AuthenticationFields from "../AuthenticationFields";
@@ -14,6 +14,7 @@ import {
 
 interface Props {
   originalUrl?: string;
+  presenter?: LoginPresenter;
 }
 
 const Login = (props: Props) => {
@@ -41,7 +42,11 @@ const Login = (props: Props) => {
     [navigate, updateUserInfo, displayErrorMessage],
   );
 
-  const presenter = useMemo(() => new LoginPresenter(view), [view]);
+  const presenterRef = useRef<LoginPresenter | null>(null);
+  if (!presenterRef.current) {
+    presenterRef.current = props.presenter ?? new LoginPresenter(view);
+  }
+  const presenter = presenterRef.current;
 
   const doLogin = async () => {
     await presenter.doLogin(alias, password, rememberMe, props.originalUrl);

@@ -57,7 +57,10 @@ const PostStatus = () => {
           type="button"
           disabled={presenter.current!.checkButtonStatus(post)}
           style={{ width: "8em" }}
-          onClick={(event) => presenter.current!.submitPost(event, post)}
+          onClick={(event) => {
+            event.preventDefault();
+            presenter.current!.submitPost(post);
+          }}
         >
           {isLoading ? (
             <span

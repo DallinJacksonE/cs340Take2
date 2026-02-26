@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 interface Props {
   onClick: (event: React.KeyboardEvent<HTMLElement>) => void;
@@ -14,6 +13,7 @@ const AuthenticationFields = (props: Props) => {
           className="form-control"
           size={50}
           id="aliasInput"
+          aria-label="alias"
           placeholder="name@example.com"
           onKeyDown={props.onClick}
           onChange={(event) => props.setAlias(event.target.value)}
@@ -25,6 +25,7 @@ const AuthenticationFields = (props: Props) => {
           type="password"
           className="form-control"
           id="passwordInput"
+          aria-label="password"
           placeholder="Password"
           onKeyDown={props.onClick}
           onChange={(event) => props.setPassword(event.target.value)}
@@ -33,6 +34,6 @@ const AuthenticationFields = (props: Props) => {
       </div>
     </>
   );
-}
+};
 
 export default AuthenticationFields;
