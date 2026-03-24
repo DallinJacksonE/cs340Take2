@@ -17,7 +17,7 @@ import {
   LogoutView,
 } from "../../src/presenter/LogoutPresenter";
 import { AuthToken, Status, User } from "tweeter-shared";
-import { StatusService } from "../../src/model.service/StatusService";
+import { StatusService } from "../../src/model/service/StatusService";
 
 describe("PostStatusPresenter", () => {
   let mockPostStatusPresenterView: PostStatusView;

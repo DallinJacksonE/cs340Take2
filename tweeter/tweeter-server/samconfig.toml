@@ -1,0 +1,12 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "tweeter-server"
+s3_bucket = "tweeter-service-bucket"
+confirm_changeset = false
+capabilities = "CAPABILITY_NAMED_IAM"
+image_repositories = []
+s3_prefix = "tweeter-server"
+
+[default.global.parameters]
+region = "us-east-1"

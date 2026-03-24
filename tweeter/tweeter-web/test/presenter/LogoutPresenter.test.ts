@@ -13,7 +13,7 @@ import {
   LogoutView,
 } from "../../src/presenter/LogoutPresenter";
 import { AuthToken } from "tweeter-shared";
-import { UserService } from "../../src/model.service/UserService";
+import { UserService } from "../../src/model/service/UserService";
 
 describe("LogoutPresenter", () => {
   let mockLogoutPresenterView: LogoutView;

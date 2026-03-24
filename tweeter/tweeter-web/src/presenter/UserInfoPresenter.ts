@@ -1,5 +1,5 @@
 import { AuthToken, User } from "tweeter-shared";
-import { UserService } from "../model.service/UserService";
+import { UserService } from "../model/service/UserService";
 import { To } from "react-router-dom";
 import { MessageView, Presenter } from "./Presenter";
 

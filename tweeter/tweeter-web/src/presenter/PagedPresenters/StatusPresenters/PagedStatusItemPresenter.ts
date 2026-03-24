@@ -1,6 +1,6 @@
 import { Status } from "tweeter-shared";
 import { PagedPresenter, PagedPresenterView } from "../PagedPresenter";
-import { StatusService } from "../../../model.service/StatusService";
+import { StatusService } from "../../../model/service/StatusService";
 
 export abstract class PagedStatusItemPresenter extends PagedPresenter<
   Status,

@@ -25,7 +25,7 @@ describe("PostStatus Test Suite", () => {
 
   const mockAuthToken = mock<AuthToken>();
   const mockAuthTokenInstance = instance(mockAuthToken);
-  beforeAll(() => {
+  beforeAll(async () => {
     (useUserInfo as jest.Mock).mockReturnValue({
       currentUser: mockUserInstance,
       authToken: mockAuthTokenInstance,
