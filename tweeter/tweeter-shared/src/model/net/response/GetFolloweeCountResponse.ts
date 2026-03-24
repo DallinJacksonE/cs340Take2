@@ -1,10 +1,3 @@
-import { TweeterResponse } from "./TweeterResponse";
+import { GetCountResponse } from "./GetCountResponse";
 
-export class GetFolloweeCountResponse extends TweeterResponse {
-  readonly count: number;
-
-  constructor(success: boolean, count: number, message: string | null = null) {
-    super(success, message);
-    this.count = count;
-  }
-}
+export class GetFolloweeCountResponse extends GetCountResponse {}

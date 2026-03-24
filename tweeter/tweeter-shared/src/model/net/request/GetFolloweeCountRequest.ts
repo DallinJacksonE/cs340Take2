@@ -1,5 +1,3 @@
-import { TweeterRequest } from "./TweeterRequest";
+import { GetCountRequest } from "./GetCountRequest";
 
-export interface GetFolloweeCountRequest extends TweeterRequest {
-  readonly userAlias: string;
-}
+export interface GetFolloweeCountRequest extends GetCountRequest {}

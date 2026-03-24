@@ -6,5 +6,6 @@ export const handler = async (
 ): Promise<TweeterResponse> => {
   const userService = new UserService();
   await userService.logout(request.token);
+  // TODO Return related to service once implemented
   return new TweeterResponse(true, null);
 };
