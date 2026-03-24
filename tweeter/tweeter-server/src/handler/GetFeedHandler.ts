@@ -1,31 +1,18 @@
 import {
   PagedStatusItemRequest,
   PagedStatusItemResponse,
-  FakeData,
-  Status,
-  User,
 } from "tweeter-shared";
+import { StatusService } from "../service/StatusService";
 
 export const handler = async (
   request: PagedStatusItemRequest,
 ): Promise<PagedStatusItemResponse> => {
-  let lastItem: Status | null = null;
-  if (request.lastItem) {
-    lastItem = new Status(
-      request.lastItem.post,
-      new User(
-        request.lastItem.user.firstName,
-        request.lastItem.user.lastName,
-        request.lastItem.user.alias,
-        request.lastItem.user.imageUrl,
-      ),
-      request.lastItem.timestamp,
-    );
-  }
-
-  const [statuses, hasMore] = FakeData.instance.getPageOfStatuses(
-    lastItem,
+  const statusService = new StatusService();
+  const [statuses, hasMore] = await statusService.loadMoreFeedItems(
+    request.token,
+    request.userAlias,
     request.pageSize,
+    request.lastItem ? request.lastItem.timestamp : null,
   );
 
   const statusDtos = statuses.map((status) => ({

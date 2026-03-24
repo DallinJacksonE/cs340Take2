@@ -1,8 +1,10 @@
 import { FollowRequest, TweeterResponse } from "tweeter-shared";
+import { UserService } from "../service/UserService";
 
 export const handler = async (
   request: FollowRequest,
 ): Promise<TweeterResponse> => {
-  // For Milestone 3, we just return a successful response
+  const userService = new UserService();
+  await userService.follow(request.token, request.userToFollow.alias);
   return new TweeterResponse(true, null);
 };

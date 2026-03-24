@@ -1,15 +1,17 @@
-import {
-  AuthenticateResponse,
-  RegisterRequest,
-  FakeData,
-} from "tweeter-shared";
+import { AuthenticateResponse, RegisterRequest } from "tweeter-shared";
+import { UserService } from "../service/UserService";
 
 export const handler = async (
   request: RegisterRequest,
 ): Promise<AuthenticateResponse> => {
-  // For Milestone 3, we just return dummy data from FakeData
-  const user = FakeData.instance.firstUser;
-  const authToken = FakeData.instance.authToken;
+  const userService = new UserService();
+  const [user, authToken] = await userService.register(
+    request.firstName,
+    request.lastName,
+    request.alias,
+    request.password,
+    request.userImageBytes,
+  );
 
   if (!user || !authToken)
     throw new Error("[internal-server-error] Registration failed");

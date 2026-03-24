@@ -1,10 +1,11 @@
-import { GetUserRequest, GetUserResponse, FakeData } from "tweeter-shared";
+import { GetUserRequest, GetUserResponse } from "tweeter-shared";
+import { UserService } from "../service/UserService";
 
 export const handler = async (
   request: GetUserRequest,
 ): Promise<GetUserResponse> => {
-  // For Milestone 3, we just return dummy data from FakeData
-  const user = FakeData.instance.findUserByAlias(request.userAlias); // Adapt 'userAlias' to match your DTO
+  const userService = new UserService();
+  const user = await userService.getUser(request.token, request.userAlias);
 
   if (!user) {
     throw new Error("[bad-request] User not found");

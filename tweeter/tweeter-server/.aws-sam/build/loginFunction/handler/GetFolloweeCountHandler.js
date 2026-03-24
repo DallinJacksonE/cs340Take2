@@ -2,8 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handler = void 0;
 const tweeter_shared_1 = require("tweeter-shared");
+const UserService_1 = require("../service/UserService");
 const handler = async (request) => {
-    const count = await tweeter_shared_1.FakeData.instance.getFolloweeCount(request.userAlias);
+    const userService = new UserService_1.UserService();
+    const count = await userService.getFolloweeCount(request.token, request.userAlias);
     return new tweeter_shared_1.GetFolloweeCountResponse(true, count, null);
 };
 exports.handler = handler;

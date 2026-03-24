@@ -2,9 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handler = void 0;
 const tweeter_shared_1 = require("tweeter-shared");
+const UserService_1 = require("../service/UserService");
 const handler = async (request) => {
-    // For Milestone 3, we just return dummy data from FakeData
-    const user = tweeter_shared_1.FakeData.instance.findUserByAlias(request.userAlias); // Adapt 'userAlias' to match your DTO
+    const userService = new UserService_1.UserService();
+    const user = await userService.getUser(request.token, request.userAlias);
     if (!user) {
         throw new Error("[bad-request] User not found");
     }

@@ -2,12 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handler = void 0;
 const tweeter_shared_1 = require("tweeter-shared");
+const FollowService_1 = require("../service/FollowService");
 const handler = async (request) => {
-    let lastItem = null;
-    if (request.lastItem) {
-        lastItem = new tweeter_shared_1.User(request.lastItem.firstName, request.lastItem.lastName, request.lastItem.alias, request.lastItem.imageUrl);
-    }
-    const [users, hasMore] = tweeter_shared_1.FakeData.instance.getPageOfUsers(lastItem, request.pageSize, request.userAlias);
+    const followService = new FollowService_1.FollowService();
+    const [users, hasMore] = await followService.loadMoreFollowers(request.token, request.userAlias, request.pageSize, request.lastItem ? request.lastItem.alias : null);
     const userDtos = users.map((user) => ({
         firstName: user.firstName,
         lastName: user.lastName,
