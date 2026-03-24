@@ -1,6 +1,8 @@
 import {
   PagedStatusItemRequest,
   PagedStatusItemResponse,
+  Status,
+  User,
 } from "tweeter-shared";
 import { StatusService } from "../service/StatusService";
 
@@ -8,11 +10,26 @@ export const handler = async (
   request: PagedStatusItemRequest,
 ): Promise<PagedStatusItemResponse> => {
   const statusService = new StatusService();
+
+  let lastItem: Status | null = null;
+  if (request.lastItem) {
+    lastItem = new Status(
+      request.lastItem.post,
+      new User(
+        request.lastItem.user.firstName,
+        request.lastItem.user.lastName,
+        request.lastItem.user.alias,
+        request.lastItem.user.imageUrl,
+      ),
+      request.lastItem.timestamp,
+    );
+  }
+
   const [statuses, hasMore] = await statusService.loadMoreStoryItems(
     request.token,
     request.userAlias,
     request.pageSize,
-    request.lastItem ? request.lastItem.timestamp : null,
+    lastItem,
   );
 
   const statusDtos = statuses.map((status) => ({

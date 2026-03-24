@@ -5,20 +5,20 @@ export class StatusService {
     token: string,
     userAlias: string,
     pageSize: number,
-    lastItemTimestamp: number | null,
+    lastItem: Status | null,
   ): Promise<[Status[], boolean]> {
     // TODO: Milestone 4 - Replace with actual database interaction
-    return FakeData.instance.getPageOfStatuses(null, pageSize);
+    return FakeData.instance.getPageOfStatuses(lastItem, pageSize);
   }
 
   public async loadMoreFeedItems(
     token: string,
     userAlias: string,
     pageSize: number,
-    lastItemTimestamp: number | null,
+    lastItem: Status | null,
   ): Promise<[Status[], boolean]> {
     // TODO: Milestone 4 - Replace with actual database interaction
-    return FakeData.instance.getPageOfStatuses(null, pageSize);
+    return FakeData.instance.getPageOfStatuses(lastItem, pageSize);
   }
 
   public async postStatus(token: string, newStatus: Status): Promise<void> {
