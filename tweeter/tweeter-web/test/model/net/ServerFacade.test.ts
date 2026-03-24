@@ -1,4 +1,3 @@
-/// <reference types="jest" />
 import "isomorphic-fetch";
 import { ServerFacade } from "../../../src/model/net/ServerFacade";
 import {

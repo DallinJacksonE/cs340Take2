@@ -1,14 +1,13 @@
 import { MemoryRouter } from "react-router-dom";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { fab } from "@fortawesome/free-brands-svg-icons";
-import { instance, mock, verify } from "@typestrong/ts-mockito";
+import { anything, instance, mock, verify, when } from "@typestrong/ts-mockito";
 import { useUserInfo } from "../../../src/components/userInfo/UserInfoHooks";
 import PostStatus from "../../../src/components/postStatus/PostStatus";
 import { User } from "tweeter-shared/src/model/domain/User";
 import { AuthToken } from "tweeter-shared/src/model/domain/AuthToken";
-import { userEvent } from "@testing-library/user-event";
 import { PostStatusPresenter } from "../../../src/presenter/PostStatusPresenter";
 
 library.add(fab);
@@ -25,6 +24,10 @@ describe("PostStatus Test Suite", () => {
 
   const mockAuthToken = mock<AuthToken>();
   const mockAuthTokenInstance = instance(mockAuthToken);
+
+  let mockPresenter: PostStatusPresenter;
+  let mockPresenterInstance: PostStatusPresenter;
+
   beforeAll(async () => {
     (useUserInfo as jest.Mock).mockReturnValue({
       currentUser: mockUserInstance,
@@ -32,87 +35,98 @@ describe("PostStatus Test Suite", () => {
     });
   });
 
+  beforeEach(() => {
+    mockPresenter = mock<PostStatusPresenter>();
+    mockPresenterInstance = instance(mockPresenter);
+    when(mockPresenter.checkButtonStatus(anything())).thenCall(
+      (post: string) => {
+        return post.length === 0;
+      },
+    );
+  });
+
   it("has both submit and clear buttons disabled with no input", () => {
-    const { user, postStatusButton, clearStatusButton, textBox } =
-      renderPostStatusAndGetElement();
+    const { postStatusButton, clearStatusButton } =
+      renderPostStatusAndGetElement(mockPresenterInstance);
 
     expect(postStatusButton).toBeDisabled();
     expect(clearStatusButton).toBeDisabled();
   });
 
-  it("enables both buttons when the text field has text", async () => {
-    const { user, postStatusButton, clearStatusButton, textBox } =
-      renderPostStatusAndGetElement();
+  it("enables both buttons when the text field has text", () => {
+    const { postStatusButton, clearStatusButton, textBox } =
+      renderPostStatusAndGetElement(mockPresenterInstance);
 
-    await expectedButtonBehaviorWithInputText(
-      user,
+    expectedButtonBehaviorWithInputText(
       postStatusButton,
       clearStatusButton,
       textBox,
     );
   });
 
-  it("disables both buttons when text has been cleared", async () => {
-    const { user, postStatusButton, clearStatusButton, textBox } =
-      renderPostStatusAndGetElement();
+  it("disables both buttons when text has been cleared", () => {
+    const { postStatusButton, clearStatusButton, textBox } =
+      renderPostStatusAndGetElement(mockPresenterInstance);
 
-    await expectedButtonBehaviorWithInputText(
-      user,
+    expectedButtonBehaviorWithInputText(
       postStatusButton,
       clearStatusButton,
       textBox,
     );
 
-    await user.clear(textBox);
+    // Use fireEvent to clear synchronously
+    fireEvent.change(textBox, { target: { value: "" } });
 
     expect(postStatusButton).toBeDisabled();
     expect(clearStatusButton).toBeDisabled();
   });
 
-  it("clear button clears text and buttons disable", async () => {
-    const { user, postStatusButton, clearStatusButton, textBox } =
-      renderPostStatusAndGetElement();
+  it("calls presenters clearPost method when clear button is pressed", async () => {
+    const { postStatusButton, clearStatusButton, textBox } =
+      renderPostStatusAndGetElement(mockPresenterInstance);
 
-    await expectedButtonBehaviorWithInputText(
-      user,
+    expectedButtonBehaviorWithInputText(
       postStatusButton,
       clearStatusButton,
       textBox,
     );
 
-    await user.click(clearStatusButton);
+    // Click synchronously
+    fireEvent.click(clearStatusButton);
 
-    expect(postStatusButton).toBeDisabled();
-    expect(clearStatusButton).toBeDisabled();
+    // Wait for the mock to register the clear call
+    await waitFor(() => {
+      verify(mockPresenter.clearPost()).once();
+    });
   });
 
   it("calls presenters postStatus method with correct parameters Post Status button pressed", async () => {
-    const mockPresenter = mock<PostStatusPresenter>();
-    const mockPresenterInstance = instance(mockPresenter);
-
-    const { user, postStatusButton, clearStatusButton, textBox } =
+    const { postStatusButton, clearStatusButton, textBox } =
       renderPostStatusAndGetElement(mockPresenterInstance);
 
-    await expectedButtonBehaviorWithInputText(
-      user,
+    expectedButtonBehaviorWithInputText(
       postStatusButton,
       clearStatusButton,
       textBox,
     );
 
-    await user.click(postStatusButton);
+    // Click synchronously
+    fireEvent.click(postStatusButton);
 
-    verify(mockPresenter.submitPost("testing textbox")).once();
+    // Wait for the mock to register the submit call
+    await waitFor(() => {
+      verify(mockPresenter.submitPost("testing textbox")).once();
+    });
   });
 });
 
-async function expectedButtonBehaviorWithInputText(
-  user: any,
+// Notice this is no longer an async function since fireEvent is completely synchronous
+function expectedButtonBehaviorWithInputText(
   postStatusButton: HTMLElement,
   clearStatusButton: HTMLElement,
   textBox: HTMLElement,
 ) {
-  await user.type(textBox, "testing textbox");
+  fireEvent.change(textBox, { target: { value: "testing textbox" } });
   expect(postStatusButton).toBeEnabled();
   expect(clearStatusButton).toBeEnabled();
 }
@@ -126,13 +140,13 @@ function renderPostStatus(presenter?: PostStatusPresenter) {
 }
 
 function renderPostStatusAndGetElement(presenter?: PostStatusPresenter) {
-  const user = userEvent.setup();
+  // Completely removed userEvent.setup()
   renderPostStatus(presenter);
 
   const postStatusButton = screen.getByLabelText("postStatusButton");
   const clearStatusButton = screen.getByLabelText("clearStatusButton");
-
   const textBox = screen.getByLabelText("post-status-text-box");
 
-  return { user, postStatusButton, clearStatusButton, textBox };
+  // No longer returning 'user'
+  return { postStatusButton, clearStatusButton, textBox };
 }

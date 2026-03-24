@@ -15,7 +15,11 @@ const AuthenticationFields = (props: Props) => {
           id="aliasInput"
           aria-label="alias"
           placeholder="name@example.com"
-          onKeyDown={props.onClick}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              props.onClick(event);
+            }
+          }}
           onChange={(event) => props.setAlias(event.target.value)}
         />
         <label htmlFor="aliasInput">Alias</label>
@@ -23,11 +27,15 @@ const AuthenticationFields = (props: Props) => {
       <div className="form-floating">
         <input
           type="password"
-          className="form-control"
+          className="form-control bottom"
           id="passwordInput"
           aria-label="password"
           placeholder="Password"
-          onKeyDown={props.onClick}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              props.onClick(event);
+            }
+          }}
           onChange={(event) => props.setPassword(event.target.value)}
         />
         <label htmlFor="passwordInput">Password</label>
