@@ -1,6 +1,5 @@
 import {
   AuthToken,
-  FakeData,
   User,
   PagedUserItemRequest,
 } from "tweeter-shared";
