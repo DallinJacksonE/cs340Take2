@@ -1,10 +1,10 @@
-export abstract class OrnamentProviderFactory {
-	abstract getOrnament(): string;
+export interface OrnamentProviderFactory {
+	getOrnament(): string;
 }
-export abstract class PatternProviderFactory {
-	abstract getTablecloth(): string;
+export interface PatternProviderFactory {
+	getTablecloth(): string;
 }
 
-export abstract class WallHangingProviderFactory {
-	abstract getHanging(): string;
+export interface WallHangingProviderFactory {
+	getHanging(): string;
 }
