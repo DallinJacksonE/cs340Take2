@@ -1,146 +1,127 @@
+import promptSync from "prompt-sync";
 import { IDocument } from "../document/IDocument";
-import * as readline from "readline";
-import { UserInputReader } from "./UserInputReader";
+import { DeleteCommand } from "../command/DeleteCommand";
+import { InsertCommand } from "../command/InsertCommand";
+import { OpenCommand } from "../command/OpenCommand";
+import { ReplaceCommand } from "../command/ReplaceCommand";
+import { StartCommand } from "../command/StartCommand";
+import { UndoRedoManager } from "../command/UndoRedoManager";
 
 export class TextEditor {
-  private _document: IDocument;
-  private consoleReader: readline.Interface;
+  private document: IDocument;
+  private undoRedoManager: UndoRedoManager;
+  private prompt;
 
   constructor(document: IDocument) {
-    this._document = document;
-    this.consoleReader = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
+    this.document = document;
+    this.undoRedoManager = new UndoRedoManager();
+    this.prompt = promptSync({ sigint: true });
   }
 
   run(): void {
-    this.consoleReader.question(this.getOptions(), (input) => {
-      const option = UserInputReader.validateNumberInput(input);
-      switch (option) {
-        case -1:
-          console.log(
-            "\x1b[36m%s\x1b[0m", //cyan
-            "User option returned -1."
-          );
-          break;
-        case 1:
-          this.insert();
-          break;
-        case 2:
-          this.delete();
-          break;
-        case 3:
-          this.replace();
-          break;
-        case 4:
-          console.log(this._document.getContents());
-          break;
-        case 5:
-          this.save();
-          break;
-        case 6:
-          this.open();
-          break;
-        case 7:
-          this._document.clear();
-          break;
-        case 8:
-          console.log("Undo");
-          break;
-        case 9:
-          console.log("Redo");
-          break;
-        case 10:
-          process.exit(1);
-      }
-      console.log();
-      this.run();
-    });
-  }
-
-  private getOptions(): string {
-    return `
-SELECT AN OPTION (1 - 10):
-
-1. Insert a string at a specified index in the document
-2. Delete a sequence of characters at a specified index
-3. Replace a sequence of characters at a specified index with a new string
-4. Display the current contents of the document
-5. Save the document to a file
-6. Open a document from a file
-7. Start a new, empty document
-8. Undo
-9. Redo
-10. Quit
-
-Your selection: `;
-  }
-
-  private insert(): void {
-    const insertionInput = UserInputReader.getUserInput("Start index: ");
-    const insertionIndex = UserInputReader.validateNumberInput(insertionInput);
-    const sequenceInput = UserInputReader.getUserInput("Sequence to insert: ");
-    this._document.insert(insertionIndex, sequenceInput);
-  }
-
-  private delete(): void {
-    const deletionIndexInput = UserInputReader.getUserInput("Start index: ");
-    const deletionIndex =
-      UserInputReader.validateNumberInput(deletionIndexInput);
-
-    const deletionDistanceInput = UserInputReader.getUserInput(
-      "Number of characters to delete: "
+    console.log("Simple Text Editor");
+    console.log(
+      "Commands: insert, delete, replace, display, save, open, start, undo, redo, quit",
     );
 
-    const deletionDistance = UserInputReader.validateNumberInput(
-      deletionDistanceInput
-    );
+    let running = true;
+    while (running) {
+      const input = this.prompt("> ");
+      const [command, ...args] = input.split(" ");
 
-    if (this._document.delete(deletionIndex, deletionDistance) == null) {
-      console.log("Deletion unsuccessful");
-    }
-  }
-
-  private replace(): void {
-    const replaceIndexInput = UserInputReader.getUserInput("Start index: ");
-    const replaceIndex = UserInputReader.validateNumberInput(replaceIndexInput);
-
-    let replaceDistance: number = 0;
-    let replacementString: string = "";
-
-    if (replaceIndex != -1) {
-      const replaceDistanceInput = UserInputReader.getUserInput(
-        "Number of characters to replace: "
-      );
-      replaceDistance =
-        UserInputReader.validateNumberInput(replaceDistanceInput);
-
-      if (replaceDistance != -1) {
-        replacementString = UserInputReader.getUserInput(
-          "Replacement string: "
+      try {
+        switch (command) {
+          case "insert": {
+            const pos = parseInt(args[0], 10);
+            const text = args.slice(1).join(" ");
+            if (isNaN(pos) || !text) {
+              console.log("Usage: insert <position> <text>");
+              break;
+            }
+            const insertCommand = new InsertCommand(this.document, pos, text);
+            this.undoRedoManager.execute(insertCommand);
+            break;
+          }
+          case "delete": {
+            const pos = parseInt(args[0], 10);
+            const count = parseInt(args[1], 10);
+            if (isNaN(pos) || isNaN(count)) {
+              console.log("Usage: delete <position> <count>");
+              break;
+            }
+            const deleteCommand = new DeleteCommand(this.document, pos, count);
+            this.undoRedoManager.execute(deleteCommand);
+            break;
+          }
+          case "replace": {
+            const pos = parseInt(args[0], 10);
+            const count = parseInt(args[1], 10);
+            const text = args.slice(2).join(" ");
+            if (isNaN(pos) || isNaN(count) || text === undefined) {
+              console.log("Usage: replace <position> <count> <text>");
+              break;
+            }
+            const replaceCommand = new ReplaceCommand(
+              this.document,
+              pos,
+              count,
+              text,
+            );
+            this.undoRedoManager.execute(replaceCommand);
+            break;
+          }
+          case "display":
+            console.log(this.document.getContents());
+            break;
+          case "save": {
+            const fileName = args[0];
+            if (!fileName) {
+              console.log("Usage: save <filename>");
+              break;
+            }
+            this.document.save(fileName);
+            console.log(`Document saved to ${fileName}`);
+            break;
+          }
+          case "open": {
+            const fileName = args[0];
+            if (!fileName) {
+              console.log("Usage: open <filename>");
+              break;
+            }
+            if (!this.document.fileExists(fileName)) {
+              console.log("File does not exist.");
+              break;
+            }
+            const openCommand = new OpenCommand(this.document, fileName);
+            this.undoRedoManager.execute(openCommand);
+            console.log(`Document opened from ${fileName}`);
+            break;
+          }
+          case "start": {
+            const startCommand = new StartCommand(this.document);
+            this.undoRedoManager.execute(startCommand);
+            console.log("New document started.");
+            break;
+          }
+          case "undo":
+            this.undoRedoManager.undo();
+            break;
+          case "redo":
+            this.undoRedoManager.redo();
+            break;
+          case "quit":
+            running = false;
+            break;
+          default:
+            console.log(`Unknown command: ${command}`);
+            break;
+        }
+      } catch (error) {
+        console.error(
+          `Error: ${error instanceof Error ? error.message : "An unknown error occurred."}`,
         );
       }
-
-      this._document.delete(replaceIndex, replaceDistance);
-      this._document.insert(replaceIndex, replacementString);
     }
-  }
-
-  private save(): void {
-    const saveFileName = UserInputReader.getUserInput("Name of file: ");
-
-    if (this._document.fileExists(saveFileName)) {
-      console.log("Overwriting existing file.");
-    } else {
-      console.log("Writing to new file.");
-    }
-
-    this._document.save(saveFileName);
-  }
-
-  private open(): void {
-    const openFileName = UserInputReader.getUserInput("Name of file to open: ");
-    this._document.open(openFileName);
   }
 }

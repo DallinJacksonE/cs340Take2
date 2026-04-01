@@ -2,3 +2,4 @@
 /dist
 layer/nodejs
 .aws-sam/
+.aiexclude

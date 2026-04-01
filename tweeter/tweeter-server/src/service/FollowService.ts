@@ -1,17 +1,25 @@
-import { User, FakeData } from "tweeter-shared";
+import { User } from "tweeter-shared";
+import { DAOFactory } from "../db/DAOs/DAOInterfaces/DAOFactory";
+import { FollowDAO } from "../db/DAOs/DAOInterfaces/FollowDAO";
+import { DynamoDAOFactory } from "../db/DynamoDAOFactory";
+import { BaseService } from "./BaseService";
 
-export class FollowService {
+export class FollowService extends BaseService {
+  private _followDAO: FollowDAO;
+
+  constructor(daoFactory: DAOFactory = new DynamoDAOFactory()) {
+    super(daoFactory);
+    this._followDAO = daoFactory.getFollowDAO();
+  }
+
   public async loadMoreFollowers(
     token: string,
     userAlias: string,
     pageSize: number,
     lastFollowerAlias: string | null,
   ): Promise<[User[], boolean]> {
-    // TODO: Milestone 4 - Replace with actual database interaction
-    const lastFollower = lastFollowerAlias
-      ? FakeData.instance.findUserByAlias(lastFollowerAlias)
-      : null;
-    return FakeData.instance.getPageOfUsers(lastFollower, pageSize, userAlias);
+    await this.getAliasFromToken(token);
+    return this._followDAO.getFollowers(userAlias, pageSize, lastFollowerAlias);
   }
 
   public async loadMoreFollowees(
@@ -20,10 +28,7 @@ export class FollowService {
     pageSize: number,
     lastFolloweeAlias: string | null,
   ): Promise<[User[], boolean]> {
-    // TODO: Milestone 4 - Replace with actual database interaction
-    const lastFollowee = lastFolloweeAlias
-      ? FakeData.instance.findUserByAlias(lastFolloweeAlias)
-      : null;
-    return FakeData.instance.getPageOfUsers(lastFollowee, pageSize, userAlias);
+    await this.getAliasFromToken(token);
+    return this._followDAO.getFollowees(userAlias, pageSize, lastFolloweeAlias);
   }
 }
