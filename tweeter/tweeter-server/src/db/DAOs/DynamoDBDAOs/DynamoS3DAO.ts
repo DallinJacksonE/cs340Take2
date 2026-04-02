@@ -6,15 +6,22 @@ import {
 } from "@aws-sdk/client-s3";
 
 export class DynamoS3DAO implements S3DAO {
-  private readonly BUCKET = "cs340-tweeter-profile-images-dj"; // Replace with your bucket name
-  private readonly REGION = "us-west-1"; // Replace with your bucket region
+  private readonly BUCKET = "tweeter-userprofile-bucket";
+  private readonly REGION = "us-east-1";
 
   async putImage(
     fileName: string,
     imageStringBase64Encoded: string,
   ): Promise<string> {
+    // The base64 string sent from the client includes a data URI prefix
+    // (e.g., "data:image/png;base64,") that needs to be removed before decoding.
+    const cleanedImageString = imageStringBase64Encoded.replace(
+      /^data:image\/\w+;base64,/,
+      "",
+    );
+
     const decodedImageBuffer: Buffer = Buffer.from(
-      imageStringBase64Encoded,
+      cleanedImageString,
       "base64",
     );
     const s3Params = {
@@ -22,7 +29,6 @@ export class DynamoS3DAO implements S3DAO {
       Key: "image/" + fileName,
       Body: decodedImageBuffer,
       ContentType: "image/png",
-      ACL: ObjectCannedACL.public_read,
     };
     const c = new PutObjectCommand(s3Params);
     const client = new S3Client({ region: this.REGION });
