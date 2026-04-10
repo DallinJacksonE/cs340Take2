@@ -9,146 +9,154 @@ import { v4 as uuidv4 } from "uuid";
 import { BaseService } from "./BaseService";
 
 export class UserService extends BaseService {
-  private _userDAO: UserDAO;
-  private _followDAO: FollowDAO;
-  private _s3DAO: S3DAO;
+	private _userDAO: UserDAO;
+	private _followDAO: FollowDAO;
+	private _s3DAO: S3DAO;
 
-  constructor(daoFactory: DAOFactory = new DynamoDAOFactory()) {
-    super(daoFactory);
-    this._userDAO = daoFactory.getUserDAO();
-    this._followDAO = daoFactory.getFollowDAO();
-    this._s3DAO = daoFactory.getS3DAO();
-  }
+	constructor(daoFactory: DAOFactory = new DynamoDAOFactory()) {
+		super(daoFactory);
+		this._userDAO = daoFactory.getUserDAO();
+		this._followDAO = daoFactory.getFollowDAO();
+		this._s3DAO = daoFactory.getS3DAO();
+	}
 
-  public async getUser(token: string, userAlias: string): Promise<User | null> {
-    await this.getAliasFromToken(token);
-    return this._userDAO.getUser(userAlias);
-  }
+	public async getUser(token: string, userAlias: string): Promise<User | null> {
+		await this.getAliasFromToken(token);
+		return this._userDAO.getUser(userAlias);
+	}
 
-  public async getIsFollowerStatus(
-    token: string,
-    followerAlias: string,
-    followeeAlias: string,
-  ): Promise<boolean> {
-    await this.getAliasFromToken(token);
-    return this._followDAO.isFollower(followerAlias, followeeAlias);
-  }
+	public async getIsFollowerStatus(
+		token: string,
+		followerAlias: string,
+		followeeAlias: string,
+	): Promise<boolean> {
+		await this.getAliasFromToken(token);
+		return this._followDAO.isFollower(followerAlias, followeeAlias);
+	}
 
-  public async getFollowerCount(
-    token: string,
-    userAlias: string,
-  ): Promise<number> {
-    await this.getAliasFromToken(token);
-    return this._userDAO.getFollowersCount(userAlias);
-  }
+	public async getFollowerCount(
+		token: string,
+		userAlias: string,
+	): Promise<number> {
+		await this.getAliasFromToken(token);
+		return this._userDAO.getFollowersCount(userAlias);
+	}
 
-  public async getFolloweeCount(
-    token: string,
-    userAlias: string,
-  ): Promise<number> {
-    await this.getAliasFromToken(token);
-    return this._userDAO.getFolloweesCount(userAlias);
-  }
+	public async getFolloweeCount(
+		token: string,
+		userAlias: string,
+	): Promise<number> {
+		await this.getAliasFromToken(token);
+		return this._userDAO.getFolloweesCount(userAlias);
+	}
 
-  public async follow(
-    token: string,
-    userToFollowAlias: string,
-  ): Promise<[number, number]> {
-    const currentUserAlias = await this.getAliasFromToken(token);
-    await this._followDAO.follow(currentUserAlias, userToFollowAlias);
-    await this._userDAO.updateFollowersCount(userToFollowAlias, 1);
-    await this._userDAO.updateFolloweesCount(currentUserAlias, 1);
+	public async follow(
+		token: string,
+		userToFollowAlias: string,
+	): Promise<[number, number]> {
+		const currentUserAlias = await this.getAliasFromToken(token);
+		await this._followDAO.follow(currentUserAlias, userToFollowAlias);
+		await this._userDAO.updateFollowersCount(userToFollowAlias, 1);
+		await this._userDAO.updateFolloweesCount(currentUserAlias, 1);
 
-    const followerCount =
-      await this._userDAO.getFollowersCount(userToFollowAlias);
-    const followeeCount =
-      await this._userDAO.getFolloweesCount(currentUserAlias);
-    return [followerCount, followeeCount]; // Return counts for the user being followed and the current user
-  }
+		const followerCount =
+			await this._userDAO.getFollowersCount(userToFollowAlias);
+		const followeeCount =
+			await this._userDAO.getFolloweesCount(currentUserAlias);
+		return [followerCount, followeeCount]; // Return counts for the user being followed and the current user
+	}
 
-  public async unfollow(
-    token: string,
-    userToUnfollowAlias: string,
-  ): Promise<[number, number]> {
-    const currentUserAlias = await this.getAliasFromToken(token);
-    await this._followDAO.unfollow(currentUserAlias, userToUnfollowAlias);
-    await this._userDAO.updateFollowersCount(userToUnfollowAlias, -1);
-    await this._userDAO.updateFolloweesCount(currentUserAlias, -1);
+	public async unfollow(
+		token: string,
+		userToUnfollowAlias: string,
+	): Promise<[number, number]> {
+		const currentUserAlias = await this.getAliasFromToken(token);
+		await this._followDAO.unfollow(currentUserAlias, userToUnfollowAlias);
+		await this._userDAO.updateFollowersCount(userToUnfollowAlias, -1);
+		await this._userDAO.updateFolloweesCount(currentUserAlias, -1);
 
-    const followerCount =
-      await this._userDAO.getFollowersCount(userToUnfollowAlias);
-    const followeeCount =
-      await this._userDAO.getFolloweesCount(currentUserAlias);
-    return [followerCount, followeeCount]; // Return counts for the user being unfollowed and the current user
-  }
+		const followerCount =
+			await this._userDAO.getFollowersCount(userToUnfollowAlias);
+		const followeeCount =
+			await this._userDAO.getFolloweesCount(currentUserAlias);
+		return [followerCount, followeeCount]; // Return counts for the user being unfollowed and the current user
+	}
 
-  public async login(
-    alias: string,
-    password: string,
-  ): Promise<[User, AuthToken]> {
-    // 1. Sanitize the incoming login attempt
-    const sanitizedAlias = alias.startsWith("@") ? alias : "@" + alias;
+	public async login(
+		alias: string,
+		password: string,
+	): Promise<[User, AuthToken]> {
+		// 1. Sanitize the incoming login attempt
+		const sanitizedAlias = alias.startsWith("@") ? alias : "@" + alias;
 
-    // 2. Search the database with the sanitized alias
-    const userData = await this._userDAO.getUserWithPassword(sanitizedAlias);
+		// 2. Search the database with the sanitized alias
+		const userData = await this._userDAO.getUserWithPassword(sanitizedAlias);
 
-    if (!userData) {
-      throw new Error("[bad-request] User not found");
-    }
+		if (!userData) {
+			throw new Error("[bad-request] User not found");
+		}
 
-    const passwordMatch = await bcrypt.compare(
-      password,
-      userData.hashedPassword,
-    );
-    if (!passwordMatch) {
-      throw new Error("[bad-request] Invalid password");
-    }
+		const passwordMatch = await bcrypt.compare(
+			password,
+			userData.hashedPassword,
+		);
+		if (!passwordMatch) {
+			throw new Error("[bad-request] Invalid password");
+		}
 
-    const authToken = new AuthToken(uuidv4(), Date.now());
+		const authToken = new AuthToken(uuidv4(), Date.now());
 
-    // 3. Store the token against the sanitized alias
-    await this._authTokenDAO.putAuthToken(authToken, sanitizedAlias);
+		// 3. Store the token against the sanitized alias
+		await this._authTokenDAO.putAuthToken(authToken, sanitizedAlias);
 
-    return [userData.user, authToken];
-  }
+		return [userData.user, authToken];
+	}
 
-  public async register(
-    firstName: string,
-    lastName: string,
-    alias: string,
-    password: string,
-    userImageBytes: string,
-  ): Promise<[User, AuthToken]> {
-    // 1. Sanitize the alias to guarantee the @ symbol
-    const sanitizedAlias = alias.startsWith("@") ? alias : "@" + alias;
+	public async register(
+		firstName: string,
+		lastName: string,
+		alias: string,
+		password: string,
+		userImageBytes: string,
+	): Promise<[User, AuthToken]> {
+		// 1. Sanitize the alias to guarantee the @ symbol
+		const sanitizedAlias = alias.startsWith("@") ? alias : "@" + alias;
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+		const salt = await bcrypt.genSalt(10);
+		const hashedPassword = await bcrypt.hash(password, salt);
 
-    // 2. Use sanitizedAlias for the S3 bucket
-    const imageUrl = await this._s3DAO.putImage(sanitizedAlias, userImageBytes);
+		// 2. Use sanitizedAlias for the S3 bucket
+		const imageUrl = await this._s3DAO.putImage(sanitizedAlias, userImageBytes);
+		const newUser = new User(firstName, lastName, sanitizedAlias, imageUrl);
 
-    // 3. Use sanitizedAlias for the User object and DAO
-    const newUser = new User(firstName, lastName, sanitizedAlias, imageUrl);
-    await this._userDAO.putUser(
-      firstName,
-      lastName,
-      sanitizedAlias, // <-- Updated
-      hashedPassword,
-      salt,
-      imageUrl,
-    );
+		// 3. Try to save the user, catch the duplicate alias error
+		try {
+			await this._userDAO.putUser(
+				firstName,
+				lastName,
+				sanitizedAlias,
+				hashedPassword,
+				salt,
+				imageUrl,
+			);
+		} catch (error: any) {
+			if (error.name === "ConditionalCheckFailedException") {
+				throw new Error("[bad-request] Alias is already taken.");
+			} else {
+				throw new Error("[internal-server-error] Failed to create user.");
+			}
+		}
 
-    const authToken = new AuthToken(uuidv4(), Date.now());
+		const authToken = new AuthToken(uuidv4(), Date.now());
 
-    // 4. Use sanitizedAlias for the AuthToken
-    await this._authTokenDAO.putAuthToken(authToken, sanitizedAlias); // <-- Updated
+		// 4. Use sanitizedAlias for the AuthToken
+		await this._authTokenDAO.putAuthToken(authToken, sanitizedAlias);
 
-    return [newUser, authToken];
-  }
+		return [newUser, authToken];
+	}
 
-  public async logout(token: string): Promise<void> {
-    await this.getAliasFromToken(token);
-    await this._authTokenDAO.deleteAuthToken(token);
-  }
+	public async logout(token: string): Promise<void> {
+		await this.getAliasFromToken(token);
+		await this._authTokenDAO.deleteAuthToken(token);
+	}
 }

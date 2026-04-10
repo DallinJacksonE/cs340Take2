@@ -3,52 +3,52 @@ import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 import { DynamoDAOFactory } from "../db/DynamoDAOFactory";
 
 export const handler = async (event: SQSEvent): Promise<void> => {
-  const sqsClient = new SQSClient();
-  const queueUrl = process.env.UPDATE_FEED_QUEUE_URL;
-  const daoFactory = new DynamoDAOFactory();
-  const followDAO = daoFactory.getFollowDAO();
+	const sqsClient = new SQSClient();
+	const queueUrl = process.env.UPDATE_FEED_QUEUE_URL;
+	const daoFactory = new DynamoDAOFactory();
+	const followDAO = daoFactory.getFollowDAO();
 
-  if (!queueUrl) {
-    throw new Error("UPDATE_FEED_QUEUE_URL is not defined");
-  }
+	if (!queueUrl) {
+		throw new Error("UPDATE_FEED_QUEUE_URL is not defined");
+	}
 
-  for (const record of event.Records) {
-    const messageBody = JSON.parse(record.body);
-    const status = messageBody.status;
-    const authorAlias = status.user.alias;
+	for (const record of event.Records) {
+		const messageBody = JSON.parse(record.body);
+		const statusData = messageBody.status;
 
-    let hasMorePages = true;
-    let lastFollowerAlias: string | null = null;
-    const pageSize = 250; // Fetch a good chunk of followers at a time
+		// Bulletproof extraction handling serialized private fields
+		const userData = statusData.user || statusData._user;
+		const authorAlias = userData.alias || userData._alias;
 
-    while (hasMorePages) {
-      // 1. Get a page of followers
-      const [followers, hasMore] = await followDAO.getFollowers(
-        authorAlias,
-        pageSize,
-        lastFollowerAlias,
-      );
+		let hasMorePages = true;
+		let lastFollowerAlias: string | null = null;
+		const pageSize = 250;
 
-      hasMorePages = hasMore;
-      if (followers.length > 0) {
-        lastFollowerAlias = followers[followers.length - 1].alias;
+		while (hasMorePages) {
+			const [followers, hasMore] = await followDAO.getFollowers(
+				authorAlias,
+				pageSize,
+				lastFollowerAlias,
+			);
 
-        // Extract just the aliases to keep the SQS message size small
-        const followerAliases = followers.map((f) => f.alias);
+			hasMorePages = hasMore;
+			if (followers.length > 0) {
+				lastFollowerAlias = followers[followers.length - 1].alias;
+				const followerAliases = followers.map((f) => f.alias);
 
-        // 2. Send this batch to the UpdateFeedQueue
-        const updateFeedMessage = {
-          status: status,
-          followerAliases: followerAliases,
-        };
+				const updateFeedMessage = {
+					status: statusData,
+					followerAliases: followerAliases,
+				};
 
-        const params = {
-          QueueUrl: queueUrl,
-          MessageBody: JSON.stringify(updateFeedMessage),
-        };
+				const params = {
+					QueueUrl: queueUrl,
+					MessageBody: JSON.stringify(updateFeedMessage),
+				};
 
-        await sqsClient.send(new SendMessageCommand(params));
-      }
-    }
-  }
+				await sqsClient.send(new SendMessageCommand(params));
+				await new Promise((resolve) => setTimeout(resolve, 500));
+			}
+		}
+	}
 };
