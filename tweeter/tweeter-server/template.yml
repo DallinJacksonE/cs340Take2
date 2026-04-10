@@ -286,14 +286,51 @@ Resources:
             #
 
   #
-  # SQS Queues  (This will become relevant in Milestone 4. For M3, leave this section commented out.)
+  # SQS Queues
   #
+  PostStatusQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: PostStatusQueue
+      VisibilityTimeout: 60
 
-  #   MyQueue:
-  #     Type: AWS::SQS::Queue
-  #     Properties:
-  #       QueueName: MyQueue
+  UpdateFeedQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: UpdateFeedQueue
+      VisibilityTimeout: 60
 
+  #
+  # SQS Queue Lambda Functions
+  #
+  postUpdateFeedMessagesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: postUpdateFeedMessagesFunction
+      Handler: handler/PostUpdateFeedMessagesHandler.handler
+      Policies: *commonPolicies
+      Environment:
+        Variables:
+          UPDATE_FEED_QUEUE_URL: !Ref UpdateFeedQueue
+      Events:
+        SQSTrigger:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt PostStatusQueue.Arn
+            BatchSize: 10
+
+  updateFeedsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: updateFeedsFunction
+      Handler: handler/UpdateFeedsHandler.handler
+      Policies: *commonPolicies
+      Events:
+        SQSTrigger:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt UpdateFeedQueue.Arn
+            BatchSize: 10
   #
   # Lambda Layer (reused by all Lambda functions)
   #
@@ -443,6 +480,9 @@ Resources:
       FunctionName: postStatusFunction
       Handler: handler/PostStatusHandler.handler
       Policies: *commonPolicies
+      Environment: # <--- ADD THIS BLOCK
+        Variables:
+          POST_STATUS_QUEUE_URL: !Ref PostStatusQueue
       Events:
         PostApi:
           Type: Api
@@ -594,9 +634,6 @@ Resources:
             WriteCapacityUnits: 1
           Projection:
             ProjectionType: ALL
-  #
-  # TODO: ADD MORE TABLE DEFINITIONS HERE
-  #
 
   statusesTable:
     Type: AWS::DynamoDB::Table

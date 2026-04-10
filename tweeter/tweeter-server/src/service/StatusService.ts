@@ -4,6 +4,7 @@ import { DynamoDAOFactory } from "../db/DynamoDAOFactory";
 import { FollowDAO } from "../db/DAOs/DAOInterfaces/FollowDAO";
 import { StatusDAO } from "../db/DAOs/DAOInterfaces/StatusDAO";
 import { BaseService } from "./BaseService";
+import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 
 export class StatusService extends BaseService {
   private _statusDAO: StatusDAO;
@@ -42,8 +43,33 @@ export class StatusService extends BaseService {
         "[bad-request] User alias in status does not match user alias from token.",
       );
     }
+
+    // 1. Post the status to the user's own story (synchronous)
     await this._statusDAO.postStatus(newStatus);
-    const followers = await this._followDAO.getAllFollowerAliases(alias);
-    await this._statusDAO.putFeedBatch(followers, newStatus);
+
+    // 2. Send the status to the SQS queue for asynchronous feed updates
+    const sqsClient = new SQSClient();
+    const queueUrl = process.env.POST_STATUS_QUEUE_URL;
+
+    if (!queueUrl) {
+      throw new Error("POST_STATUS_QUEUE_URL is not defined");
+    }
+
+    const messageBody = JSON.stringify({
+      status: newStatus,
+    });
+
+    const params = {
+      QueueUrl: queueUrl,
+      MessageBody: messageBody,
+    };
+
+    try {
+      await sqsClient.send(new SendMessageCommand(params));
+    } catch (error) {
+      throw new Error(
+        "[internal-server-error] Failed to send message to queue: " + error,
+      );
+    }
   }
 }

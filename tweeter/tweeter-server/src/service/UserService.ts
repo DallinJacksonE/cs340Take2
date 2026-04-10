@@ -86,7 +86,11 @@ export class UserService extends BaseService {
     alias: string,
     password: string,
   ): Promise<[User, AuthToken]> {
-    const userData = await this._userDAO.getUserWithPassword(alias);
+    // 1. Sanitize the incoming login attempt
+    const sanitizedAlias = alias.startsWith("@") ? alias : "@" + alias;
+
+    // 2. Search the database with the sanitized alias
+    const userData = await this._userDAO.getUserWithPassword(sanitizedAlias);
 
     if (!userData) {
       throw new Error("[bad-request] User not found");
@@ -101,7 +105,9 @@ export class UserService extends BaseService {
     }
 
     const authToken = new AuthToken(uuidv4(), Date.now());
-    await this._authTokenDAO.putAuthToken(authToken, alias);
+
+    // 3. Store the token against the sanitized alias
+    await this._authTokenDAO.putAuthToken(authToken, sanitizedAlias);
 
     return [userData.user, authToken];
   }
@@ -113,23 +119,30 @@ export class UserService extends BaseService {
     password: string,
     userImageBytes: string,
   ): Promise<[User, AuthToken]> {
-    const salt = await bcrypt.genSalt(10); // Generate a salt
-    const hashedPassword = await bcrypt.hash(password, salt); // Hash the password with the salt
+    // 1. Sanitize the alias to guarantee the @ symbol
+    const sanitizedAlias = alias.startsWith("@") ? alias : "@" + alias;
 
-    const imageUrl = await this._s3DAO.putImage(alias, userImageBytes);
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    const newUser = new User(firstName, lastName, alias, imageUrl);
+    // 2. Use sanitizedAlias for the S3 bucket
+    const imageUrl = await this._s3DAO.putImage(sanitizedAlias, userImageBytes);
+
+    // 3. Use sanitizedAlias for the User object and DAO
+    const newUser = new User(firstName, lastName, sanitizedAlias, imageUrl);
     await this._userDAO.putUser(
       firstName,
       lastName,
-      alias,
+      sanitizedAlias, // <-- Updated
       hashedPassword,
       salt,
       imageUrl,
     );
 
     const authToken = new AuthToken(uuidv4(), Date.now());
-    await this._authTokenDAO.putAuthToken(authToken, alias);
+
+    // 4. Use sanitizedAlias for the AuthToken
+    await this._authTokenDAO.putAuthToken(authToken, sanitizedAlias); // <-- Updated
 
     return [newUser, authToken];
   }
