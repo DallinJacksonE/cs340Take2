@@ -21,7 +21,6 @@ export const handler = async (event: SQSEvent): Promise<void> => {
     const userData = statusData.user || statusData._user;
     const authorAlias = userData.alias || userData._alias;
 
-    // 1. Massive page size to ensure we finish in under 16 loops
     const pageSize = 1000;
 
     const [followers, hasMore] = await followDAO.getFollowers(
@@ -32,17 +31,13 @@ export const handler = async (event: SQSEvent): Promise<void> => {
 
     if (followers.length > 0) {
       const followerAliases = followers.map((f) => f.alias);
-      const chunkSize = 25;
-      let batchIndex = 0;
+
+      // 1. Bundle exactly 100 feeds (1 second of database capacity)
+      const chunkSize = 100;
       let currentDelay = 0;
 
       for (let i = 0; i < followerAliases.length; i += chunkSize) {
         const chunk = followerAliases.slice(i, i + chunkSize);
-
-        // 2. STAGGER THE LOAD
-        // We write 4 batches of 25 (100 feeds) per second.
-        // Every 4th batch, we increase the SQS delivery delay by 1 second.
-        currentDelay = Math.floor(batchIndex / 4);
 
         const updateFeedMessage = {
           status: statusData,
@@ -53,14 +48,15 @@ export const handler = async (event: SQSEvent): Promise<void> => {
           new SendMessageCommand({
             QueueUrl: updateFeedQueueUrl,
             MessageBody: JSON.stringify(updateFeedMessage),
-            DelaySeconds: currentDelay, // The messages wake up sequentially
+            DelaySeconds: currentDelay,
           }),
         );
 
-        batchIndex++;
+        // 2. Increment the delay by exactly 1 second for the next 100 items
+        currentDelay++;
       }
 
-      // 3. Delay the next continuation loop until the current staggered chunks are finished
+      // 3. The continuation message delays exactly until the current 1000 are done
       if (hasMore) {
         const nextLastFollowerAlias = followers[followers.length - 1].alias;
 
@@ -73,7 +69,7 @@ export const handler = async (event: SQSEvent): Promise<void> => {
           new SendMessageCommand({
             QueueUrl: postStatusQueueUrl,
             MessageBody: JSON.stringify(continuationMessage),
-            DelaySeconds: currentDelay + 1,
+            DelaySeconds: currentDelay,
           }),
         );
       }
