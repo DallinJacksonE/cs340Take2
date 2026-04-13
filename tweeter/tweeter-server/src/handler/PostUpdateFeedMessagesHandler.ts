@@ -3,52 +3,80 @@ import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 import { DynamoDAOFactory } from "../db/DynamoDAOFactory";
 
 export const handler = async (event: SQSEvent): Promise<void> => {
-	const sqsClient = new SQSClient();
-	const queueUrl = process.env.UPDATE_FEED_QUEUE_URL;
-	const daoFactory = new DynamoDAOFactory();
-	const followDAO = daoFactory.getFollowDAO();
+  const sqsClient = new SQSClient();
+  const updateFeedQueueUrl = process.env.UPDATE_FEED_QUEUE_URL;
+  const postStatusQueueUrl = process.env.POST_STATUS_QUEUE_URL;
+  const daoFactory = new DynamoDAOFactory();
+  const followDAO = daoFactory.getFollowDAO();
 
-	if (!queueUrl) {
-		throw new Error("UPDATE_FEED_QUEUE_URL is not defined");
-	}
+  if (!updateFeedQueueUrl || !postStatusQueueUrl) {
+    throw new Error("Queue URLs are not defined in environment variables");
+  }
 
-	for (const record of event.Records) {
-		const messageBody = JSON.parse(record.body);
-		const statusData = messageBody.status;
+  for (const record of event.Records) {
+    const messageBody = JSON.parse(record.body);
+    const statusData = messageBody.status;
+    const currentLastFollowerAlias = messageBody.lastFollowerAlias || null;
 
-		// Bulletproof extraction handling serialized private fields
-		const userData = statusData.user || statusData._user;
-		const authorAlias = userData.alias || userData._alias;
+    const userData = statusData.user || statusData._user;
+    const authorAlias = userData.alias || userData._alias;
 
-		let hasMorePages = true;
-		let lastFollowerAlias: string | null = null;
-		const pageSize = 250;
+    // 1. Massive page size to ensure we finish in under 16 loops
+    const pageSize = 1000;
 
-		while (hasMorePages) {
-			const [followers, hasMore] = await followDAO.getFollowers(
-				authorAlias,
-				pageSize,
-				lastFollowerAlias,
-			);
+    const [followers, hasMore] = await followDAO.getFollowers(
+      authorAlias,
+      pageSize,
+      currentLastFollowerAlias,
+    );
 
-			hasMorePages = hasMore;
-			if (followers.length > 0) {
-				lastFollowerAlias = followers[followers.length - 1].alias;
-				const followerAliases = followers.map((f) => f.alias);
+    if (followers.length > 0) {
+      const followerAliases = followers.map((f) => f.alias);
+      const chunkSize = 25;
+      let batchIndex = 0;
+      let currentDelay = 0;
 
-				const updateFeedMessage = {
-					status: statusData,
-					followerAliases: followerAliases,
-				};
+      for (let i = 0; i < followerAliases.length; i += chunkSize) {
+        const chunk = followerAliases.slice(i, i + chunkSize);
 
-				const params = {
-					QueueUrl: queueUrl,
-					MessageBody: JSON.stringify(updateFeedMessage),
-				};
+        // 2. STAGGER THE LOAD
+        // We write 4 batches of 25 (100 feeds) per second.
+        // Every 4th batch, we increase the SQS delivery delay by 1 second.
+        currentDelay = Math.floor(batchIndex / 4);
 
-				await sqsClient.send(new SendMessageCommand(params));
-				await new Promise((resolve) => setTimeout(resolve, 500));
-			}
-		}
-	}
+        const updateFeedMessage = {
+          status: statusData,
+          followerAliases: chunk,
+        };
+
+        await sqsClient.send(
+          new SendMessageCommand({
+            QueueUrl: updateFeedQueueUrl,
+            MessageBody: JSON.stringify(updateFeedMessage),
+            DelaySeconds: currentDelay, // The messages wake up sequentially
+          }),
+        );
+
+        batchIndex++;
+      }
+
+      // 3. Delay the next continuation loop until the current staggered chunks are finished
+      if (hasMore) {
+        const nextLastFollowerAlias = followers[followers.length - 1].alias;
+
+        const continuationMessage = {
+          status: statusData,
+          lastFollowerAlias: nextLastFollowerAlias,
+        };
+
+        await sqsClient.send(
+          new SendMessageCommand({
+            QueueUrl: postStatusQueueUrl,
+            MessageBody: JSON.stringify(continuationMessage),
+            DelaySeconds: currentDelay + 1,
+          }),
+        );
+      }
+    }
+  }
 };

@@ -312,6 +312,7 @@ Resources:
       Environment:
         Variables:
           UPDATE_FEED_QUEUE_URL: !Ref UpdateFeedQueue
+          POST_STATUS_QUEUE_URL: !Ref PostStatusQueue
       Events:
         SQSTrigger:
           Type: SQS
@@ -583,8 +584,8 @@ Resources:
           KeyType: HASH
       BillingMode: PROVISIONED
       ProvisionedThroughput:
-        ReadCapacityUnits: 1
-        WriteCapacityUnits: 1
+        ReadCapacityUnits: 100
+        WriteCapacityUnits: 200
 
   authtokensTable:
     Type: AWS::DynamoDB::Table
@@ -620,8 +621,8 @@ Resources:
           KeyType: RANGE
       BillingMode: PROVISIONED
       ProvisionedThroughput:
-        ReadCapacityUnits: 1
-        WriteCapacityUnits: 1
+        ReadCapacityUnits: 100
+        WriteCapacityUnits: 100
       GlobalSecondaryIndexes:
         - IndexName: follows_inverted_index
           KeySchema:
@@ -630,8 +631,8 @@ Resources:
             - AttributeName: followee_alias
               KeyType: RANGE
           ProvisionedThroughput:
-            ReadCapacityUnits: 1
-            WriteCapacityUnits: 1
+            ReadCapacityUnits: 100
+            WriteCapacityUnits: 100
           Projection:
             ProjectionType: ALL
 
@@ -669,5 +670,5 @@ Resources:
           KeyType: RANGE
       BillingMode: PROVISIONED
       ProvisionedThroughput:
-        ReadCapacityUnits: 1
-        WriteCapacityUnits: 1
+        ReadCapacityUnits: 200
+        WriteCapacityUnits: 200

@@ -4,23 +4,48 @@ import {
   RegisterRequest,
   PagedUserItemRequest,
   GetFollowerCountRequest,
-  GetFolloweeCountRequest,
 } from "tweeter-shared";
 
 describe("ServerFacade Integration Tests", () => {
   let serverFacade: ServerFacade;
+  let validToken: string;
+  let testUserAlias: string;
 
-  beforeAll(() => {
+  // A completely valid, tiny 1x1 pixel transparent PNG base64 string so S3 doesn't crash
+  const tinyImageBase64 =
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
+  jest.setTimeout(20000);
+
+  beforeAll(async () => {
     serverFacade = new ServerFacade();
+    testUserAlias = `@setupUser${Date.now()}`;
+
+    const registerRequest: RegisterRequest = {
+      firstName: "Setup",
+      lastName: "User",
+      alias: testUserAlias,
+      password: "password123",
+      userImageBytes: tinyImageBase64,
+      imageFileExtension: "png",
+    };
+
+    const registerResponse = await serverFacade.register(registerRequest);
+    if (!registerResponse.success || !registerResponse.authToken) {
+      throw new Error("Failed to register setup user before running tests!");
+    }
+
+    validToken = registerResponse.authToken.token;
   });
 
   it("should successfully register a user", async () => {
+    const uniqueAlias = `@integrationtest${Date.now()}`;
     const request: RegisterRequest = {
       firstName: "Integration",
       lastName: "Test",
-      alias: "@integrationtest",
+      alias: uniqueAlias,
       password: "password123",
-      userImageBytes: "base64image",
+      userImageBytes: tinyImageBase64,
       imageFileExtension: "png",
     };
 
@@ -30,13 +55,13 @@ describe("ServerFacade Integration Tests", () => {
     expect(response.success).toBe(true);
     expect(response.user).toBeDefined();
     expect(response.authToken).toBeDefined();
-    expect(response.user?.firstName).toBe("Allen"); // FakeData returns Allen
+    expect(response.user?.alias).toBe(uniqueAlias);
   });
 
   it("should successfully get a user's followers", async () => {
     const request: PagedUserItemRequest = {
-      token: "dummy-token",
-      userAlias: "@allen",
+      token: validToken,
+      userAlias: testUserAlias,
       pageSize: 10,
       lastItem: null,
     };
@@ -46,14 +71,12 @@ describe("ServerFacade Integration Tests", () => {
     expect(response).toBeDefined();
     expect(response.success).toBe(true);
     expect(response.items).toBeDefined();
-    expect(response.items?.length).toBeGreaterThan(0);
-    expect(response.hasMore).toBeDefined();
   });
 
   it("should successfully get the followers and followees count of a user", async () => {
     const countRequest: GetFollowerCountRequest = {
-      token: "dummy-token",
-      userAlias: "@allen",
+      token: validToken,
+      userAlias: testUserAlias,
     };
 
     const followerResponse = await serverFacade.getFollowerCount(countRequest);
@@ -62,11 +85,9 @@ describe("ServerFacade Integration Tests", () => {
     expect(followerResponse).toBeDefined();
     expect(followerResponse.success).toBe(true);
     expect(typeof followerResponse.count).toBe("number");
-    expect(followerResponse.count).toBeGreaterThan(0);
 
     expect(followeeResponse).toBeDefined();
     expect(followeeResponse.success).toBe(true);
     expect(typeof followeeResponse.count).toBe("number");
-    expect(followeeResponse.count).toBeGreaterThan(0);
   });
 });
